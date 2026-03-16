@@ -34,7 +34,8 @@ body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--te
 .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 .calc-box { background: var(--surface2); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 12px; font-size: 14px; font-weight: 600; color: var(--accent2); text-align: center; margin: 8px 0; }
 .mic-btn { width: 100%; background: var(--surface2); border: 2px dashed var(--border); border-radius: 8px; color: var(--text-muted); font-family: 'Barlow', sans-serif; font-size: 14px; padding: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 8px 0; }
-.mic-btn.active { background: rgba(192,57,43,0.15); border-color: var(--danger); color: var(--danger); }
+.mic-btn.active { background: rgba(192,57,43,0.15); border-color: var(--danger); color: var(--danger); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
 .foto-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .foto-thumb { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); }
 .foto-add { width: 70px; height: 70px; border: 2px dashed var(--border); border-radius: 8px; background: none; color: var(--text-muted); font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -85,10 +86,15 @@ body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--te
 
 <div class="form-card">
   <div class="form-title">➕ Nuova Voce</div>
+
   <div class="field">
     <label>Descrizione lavorazione</label>
     <input type="text" id="fDesc" placeholder="Es: Intonaco civile parete nord...">
   </div>
+  <button class="mic-btn" id="micBtnDesc" onclick="toggleVoceDesc()">
+    🎤 <span id="micLabelDesc">Di' la descrizione con la voce</span>
+  </button>
+
   <div class="grid2">
     <div class="field">
       <label>U.M.</label>
@@ -107,9 +113,12 @@ body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--te
     <div class="field"><label>La (m)</label><input type="number" id="fLa" step="0.01" placeholder="0.00" oninput="calcola()"></div>
     <div class="field"><label>A/P (m)</label><input type="number" id="fA" step="0.01" placeholder="0.00" oninput="calcola()"></div>
   </div>
-  <button class="mic-btn" id="micBtn" onclick="toggleVoce()">🎤 <span id="micLabel">Inserisci misure con la voce</span></button>
+  <button class="mic-btn" id="micBtn" onclick="toggleVoce()">
+    📏 <span id="micLabel">Di' le misure con la voce</span>
+  </button>
   <div class="voice-feedback" id="voiceFeedback"></div>
   <div class="calc-box" id="calcBox">📏 Quantità: —</div>
+
   <div class="field"><label>Prezzo unitario (€)</label><input type="number" id="fPrezzo" step="0.01" placeholder="0.00" oninput="calcola()"></div>
   <div class="field"><label>Note / Appunti</label><input type="text" id="fNote" placeholder="Note, riferimenti, osservazioni..."></div>
   <div class="field">
@@ -141,57 +150,56 @@ body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--te
 <div class="toast" id="toast"></div>
 
 <script>
-let voci = [], fotoTemp = [], recognition = null, isListening = false;
-let cantieri = {}, cantiereAttivo = null;
+let voci=[], fotoTemp=[], recognition=null, isListening=false, recognitionDesc=null;
+let cantieri={}, cantiereAttivo=null;
 
-document.getElementById('headerDate').textContent = new Date().toLocaleDateString('it-IT', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+document.getElementById('headerDate').textContent = new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 initCantieri();
 
 function initCantieri() {
-  try { const r = localStorage.getItem('cantieretalk_v2'); if(r) cantieri = JSON.parse(r); } catch(e){}
-  if (Object.keys(cantieri).length === 0) nuovoCantiere('Cantiere 1', false);
-  else { cantiereAttivo = Object.keys(cantieri)[0]; voci = cantieri[cantiereAttivo].voci || []; }
+  try { const r=localStorage.getItem('cantieretalk_v2'); if(r) cantieri=JSON.parse(r); } catch(e){}
+  if(!Object.keys(cantieri).length) nuovoCantiere('Cantiere 1',false);
+  else { cantiereAttivo=Object.keys(cantieri)[0]; voci=cantieri[cantiereAttivo].voci||[]; }
   renderTabs(); renderVoci();
 }
 
-function nuovoCantiere(nome, chiedi=true) {
-  if (chiedi) { nome = prompt('Nome cantiere:', 'Cantiere ' + (Object.keys(cantieri).length+1)); if(!nome) return; }
-  const id = 'c_' + Date.now();
-  cantieri[id] = { nome: nome.trim(), voci: [] };
-  cantiereAttivo = id; voci = [];
+function nuovoCantiere(nome,chiedi=true) {
+  if(chiedi){nome=prompt('Nome cantiere:','Cantiere '+(Object.keys(cantieri).length+1));if(!nome)return;}
+  const id='c_'+Date.now();
+  cantieri[id]={nome:nome.trim(),voci:[]};
+  cantiereAttivo=id; voci=[];
   salva(); renderTabs(); renderVoci();
-  showToast('🏗 "' + nome + '" creato!');
+  showToast('🏗 "'+nome+'" creato!');
 }
 
 function switchCantiere(id) {
-  if(cantiereAttivo) cantieri[cantiereAttivo].voci = [...voci];
-  cantiereAttivo = id; voci = cantieri[id].voci || [];
+  if(cantiereAttivo) cantieri[cantiereAttivo].voci=[...voci];
+  cantiereAttivo=id; voci=cantieri[id].voci||[];
   salva(); renderTabs(); renderVoci();
 }
 
 function eliminaCantiere() {
-  if (Object.keys(cantieri).length <= 1) { showToast('⚠️ Almeno un cantiere!'); return; }
-  const nome = cantieri[cantiereAttivo].nome;
-  if (!confirm('Eliminare "' + nome + '"?')) return;
+  if(Object.keys(cantieri).length<=1){showToast('⚠️ Almeno un cantiere!');return;}
+  const nome=cantieri[cantiereAttivo].nome;
+  if(!confirm('Eliminare "'+nome+'"?'))return;
   delete cantieri[cantiereAttivo];
-  cantiereAttivo = Object.keys(cantieri)[0];
-  voci = cantieri[cantiereAttivo].voci || [];
+  cantiereAttivo=Object.keys(cantieri)[0];
+  voci=cantieri[cantiereAttivo].voci||[];
   salva(); renderTabs(); renderVoci();
   showToast('🗑 Cantiere eliminato');
 }
 
 function renderTabs() {
-  document.getElementById('cantiereTabs').innerHTML =
-    Object.entries(cantieri).map(([id,c]) =>
+  document.getElementById('cantiereTabs').innerHTML=
+    Object.entries(cantieri).map(([id,c])=>
       `<button class="cantiere-tab ${id===cantiereAttivo?'active':''}" onclick="switchCantiere('${id}')">${c.nome}</button>`
-    ).join('') + `<button class="cantiere-add" onclick="nuovoCantiere()" title="Nuovo">+</button>`;
-  const lbl = cantiereAttivo && cantieri[cantiereAttivo] ? cantieri[cantiereAttivo].nome : '';
-  document.getElementById('cantiereLabel').textContent = '📍 ' + lbl;
+    ).join('')+`<button class="cantiere-add" onclick="nuovoCantiere()" title="Nuovo">+</button>`;
+  document.getElementById('cantiereLabel').textContent='📍 '+(cantiereAttivo&&cantieri[cantiereAttivo]?cantieri[cantiereAttivo].nome:'');
 }
 
 function salva() {
-  if(cantiereAttivo) cantieri[cantiereAttivo].voci = [...voci];
-  try { localStorage.setItem('cantieretalk_v2', JSON.stringify(cantieri)); } catch(e){}
+  if(cantiereAttivo) cantieri[cantiereAttivo].voci=[...voci];
+  try{localStorage.setItem('cantieretalk_v2',JSON.stringify(cantieri));}catch(e){}
 }
 
 function calcola() {
@@ -207,41 +215,41 @@ function calcola() {
   else if(um==='m') q=l*r;
   else q=r;
   const imp=q*p;
-  document.getElementById('calcBox').textContent = q>0 ? `📏 ${q.toFixed(2)} ${um}`+(imp>0?` → € ${imp.toFixed(2)}`:'') : '📏 Quantità: —';
+  document.getElementById('calcBox').textContent=q>0?`📏 ${q.toFixed(2)} ${um}`+(imp>0?` → € ${imp.toFixed(2)}`:''):'📏 Quantità: —';
   return {q,imp};
 }
 
 function aggiungiPhoto(event) {
-  Array.from(event.target.files).forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
+  Array.from(event.target.files).forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
       fotoTemp.push(e.target.result);
-      const img = document.createElement('img');
-      img.src = e.target.result; img.className = 'foto-thumb';
-      img.onclick = () => openLightbox(e.target.result);
-      document.getElementById('fotoPreview').insertBefore(img, document.getElementById('fotoPreview').querySelector('.foto-add'));
+      const img=document.createElement('img');
+      img.src=e.target.result; img.className='foto-thumb';
+      img.onclick=()=>openLightbox(e.target.result);
+      document.getElementById('fotoPreview').insertBefore(img,document.getElementById('fotoPreview').querySelector('.foto-add'));
     };
     reader.readAsDataURL(file);
   });
-  event.target.value = '';
+  event.target.value='';
 }
 
 function aggiungiVoce() {
-  const desc = document.getElementById('fDesc').value.trim();
-  if (!desc) { showToast('⚠️ Inserisci descrizione!'); return; }
-  const {q,imp} = calcola();
+  const desc=document.getElementById('fDesc').value.trim();
+  if(!desc){showToast('⚠️ Inserisci descrizione!');return;}
+  const {q,imp}=calcola();
   voci.push({
-    id: Date.now(), desc,
-    um: document.getElementById('fUm').value,
-    l: parseFloat(document.getElementById('fL').value)||0,
-    la: parseFloat(document.getElementById('fLa').value)||0,
-    a: parseFloat(document.getElementById('fA').value)||0,
-    r: parseFloat(document.getElementById('fRip').value)||1,
-    q, prezzo: parseFloat(document.getElementById('fPrezzo').value)||0,
-    importo: imp, note: document.getElementById('fNote').value.trim(),
-    foto: [...fotoTemp], data: new Date().toLocaleDateString('it-IT')
+    id:Date.now(), desc,
+    um:document.getElementById('fUm').value,
+    l:parseFloat(document.getElementById('fL').value)||0,
+    la:parseFloat(document.getElementById('fLa').value)||0,
+    a:parseFloat(document.getElementById('fA').value)||0,
+    r:parseFloat(document.getElementById('fRip').value)||1,
+    q, prezzo:parseFloat(document.getElementById('fPrezzo').value)||0,
+    importo:imp, note:document.getElementById('fNote').value.trim(),
+    foto:[...fotoTemp], data:new Date().toLocaleDateString('it-IT')
   });
-  ['fDesc','fL','fLa','fA','fNote','fPrezzo'].forEach(id => document.getElementById(id).value='');
+  ['fDesc','fL','fLa','fA','fNote','fPrezzo'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fRip').value='1';
   document.getElementById('calcBox').textContent='📏 Quantità: —';
   document.getElementById('fotoPreview').innerHTML='<button class="foto-add" onclick="document.getElementById(\'fotoInput\').click()">+</button>';
@@ -251,12 +259,12 @@ function aggiungiVoce() {
 }
 
 function renderVoci() {
-  document.getElementById('voceCount').textContent = voci.length;
-  const totale = voci.reduce((s,v)=>s+v.importo,0);
-  document.getElementById('totaleBadge').textContent = '€ '+totale.toLocaleString('it-IT',{minimumFractionDigits:2});
-  const list = document.getElementById('vociList');
-  if (!voci.length) { list.innerHTML='<div class="empty-state">Nessuna voce.<br>Compila il modulo 👆</div>'; return; }
-  list.innerHTML = voci.map((v,i) => `
+  document.getElementById('voceCount').textContent=voci.length;
+  const totale=voci.reduce((s,v)=>s+v.importo,0);
+  document.getElementById('totaleBadge').textContent='€ '+totale.toLocaleString('it-IT',{minimumFractionDigits:2});
+  const list=document.getElementById('vociList');
+  if(!voci.length){list.innerHTML='<div class="empty-state">Nessuna voce.<br>Compila il modulo 👆</div>';return;}
+  list.innerHTML=voci.map((v,i)=>`
     <div class="voce-card">
       <div class="voce-top">
         <span class="voce-num">#${i+1}</span>
@@ -279,14 +287,14 @@ function renderVoci() {
 }
 
 function eliminaVoce(id) {
-  if(confirm('Eliminare?')) { voci=voci.filter(v=>v.id!==id); salva(); renderVoci(); }
+  if(confirm('Eliminare?')){voci=voci.filter(v=>v.id!==id);salva();renderVoci();}
 }
 
 function exportExcel() {
   if(!voci.length){showToast('⚠️ Nessuna voce!');return;}
-  const nm = cantieri[cantiereAttivo]?.nome||'cantiere';
+  const nm=cantieri[cantiereAttivo]?.nome||'cantiere';
   let csv='\uFEFFN°;Descrizione;UM;L;La;A;Rip;Qtà;P.Unit;Importo;Note;Data\n';
-  voci.forEach((v,i)=>{ csv+=`${i+1};"${v.desc}";${v.um};${v.l||''};${v.la||''};${v.a||''};${v.r};${v.q.toFixed(2)};${v.prezzo.toFixed(2)};${v.importo.toFixed(2)};"${v.note||''}";${v.data}\n`; });
+  voci.forEach((v,i)=>{csv+=`${i+1};"${v.desc}";${v.um};${v.l||''};${v.la||''};${v.a||''};${v.r};${v.q.toFixed(2)};${v.prezzo.toFixed(2)};${v.importo.toFixed(2)};"${v.note||''}";${v.data}\n`;});
   csv+=`;;;;;;;TOTALE;;${voci.reduce((s,v)=>s+v.importo,0).toFixed(2)};;\n`;
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
@@ -301,7 +309,7 @@ function exportPDF() {
   const nm=cantieri[cantiereAttivo]?.nome||'Cantiere';
   const righe=voci.map((v,i)=>`<tr><td>${i+1}</td><td>${v.desc}</td><td>${v.um}</td><td>${v.l||'-'}</td><td>${v.la||'-'}</td><td>${v.a||'-'}</td><td>${v.r}</td><td>${v.q.toFixed(2)}</td><td>${v.prezzo>0?'€'+v.prezzo.toFixed(2):'-'}</td><td style="color:#e8a020;font-weight:700;">${v.importo>0?'€'+v.importo.toFixed(2):'-'}</td><td>${v.note||''}</td></tr>${v.foto.length?`<tr><td colspan="11" style="padding:8px;background:#f9f9f9;"><div style="display:flex;gap:6px;">${v.foto.map(f=>`<img src="${f}" style="width:70px;height:70px;object-fit:cover;border-radius:4px;">`).join('')}</div></td></tr>`:''}`).join('');
   const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${nm}</title><style>body{font-family:Arial;font-size:12px;margin:20px;}h1{font-size:18px;color:#333;}table{width:100%;border-collapse:collapse;}th{background:#1a1917;color:#e8a020;padding:6px;font-size:11px;text-align:left;}td{padding:5px 6px;border-bottom:1px solid #eee;}.tot td{background:#1a1917;color:#f5c842;font-weight:800;}@media print{body{margin:5px;}}</style></head><body><h1>📐 ${nm}</h1><p style="color:#888;font-size:11px;">Generato il ${data}</p><table><thead><tr><th>#</th><th>Descrizione</th><th>UM</th><th>L</th><th>La</th><th>A</th><th>Rip</th><th>Qtà</th><th>P.Unit</th><th>Importo</th><th>Note</th></tr></thead><tbody>${righe}</tbody><tfoot><tr class="tot"><td colspan="9" style="text-align:right;">TOTALE</td><td>€ ${totale.toLocaleString('it-IT',{minimumFractionDigits:2})}</td><td></td></tr></tfoot></table><script>window.onload=()=>window.print();<\/script></body></html>`);
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${nm}</title><style>body{font-family:Arial;font-size:12px;margin:20px;}h1{font-size:18px;}table{width:100%;border-collapse:collapse;}th{background:#1a1917;color:#e8a020;padding:6px;font-size:11px;text-align:left;}td{padding:5px 6px;border-bottom:1px solid #eee;}.tot td{background:#1a1917;color:#f5c842;font-weight:800;}@media print{body{margin:5px;}}</style></head><body><h1>📐 ${nm}</h1><p style="color:#888;font-size:11px;">${data}</p><table><thead><tr><th>#</th><th>Descrizione</th><th>UM</th><th>L</th><th>La</th><th>A</th><th>Rip</th><th>Qtà</th><th>P.Unit</th><th>Importo</th><th>Note</th></tr></thead><tbody>${righe}</tbody><tfoot><tr class="tot"><td colspan="9" style="text-align:right;">TOTALE</td><td>€ ${totale.toLocaleString('it-IT',{minimumFractionDigits:2})}</td><td></td></tr></tfoot></table><script>window.onload=()=>window.print();<\/script></body></html>`);
   win.document.close(); showToast('📄 PDF!');
 }
 
@@ -317,18 +325,38 @@ function backupJSON() {
 function ripristinaJSON(event) {
   const file=event.target.files[0]; if(!file) return;
   const reader=new FileReader();
-  reader.onload=e=>{ try{ const d=JSON.parse(e.target.result); if(d.voci&&Array.isArray(d.voci)){voci=d.voci;salva();renderVoci();showToast('✅ Ripristinati '+voci.length+' voci!');} }catch(e){showToast('❌ File non valido!');} };
+  reader.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.voci&&Array.isArray(d.voci)){voci=d.voci;salva();renderVoci();showToast('✅ Ripristinati '+voci.length+' voci!');}}catch(e){showToast('❌ File non valido!');}};
   reader.readAsText(file); event.target.value='';
 }
 
-function toggleVoce() { isListening?stopVoce():startVoce(); }
+// ── VOCE DESCRIZIONE ─────────────────────────────
+function toggleVoceDesc() {
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showToast('⚠️ Usa Chrome');return;}
+  const btn=document.getElementById('micBtnDesc');
+  const lbl=document.getElementById('micLabelDesc');
+  if(recognitionDesc){recognitionDesc.stop();recognitionDesc=null;btn.classList.remove('active');lbl.textContent='🎤 Di\' la descrizione con la voce';return;}
+  recognitionDesc=new SR(); recognitionDesc.lang='it-IT'; recognitionDesc.continuous=false; recognitionDesc.interimResults=true;
+  recognitionDesc.onstart=()=>{btn.classList.add('active');lbl.textContent='⏹ In ascolto... parla!';};
+  recognitionDesc.onresult=e=>{
+    const t=Array.from(e.results).map(r=>r[0].transcript).join('');
+    document.getElementById('fDesc').value=t;
+    if(e.results[0].isFinal) showToast('🎤 Descrizione: "'+t+'"');
+  };
+  recognitionDesc.onend=()=>{recognitionDesc=null;btn.classList.remove('active');lbl.textContent='🎤 Di\' la descrizione con la voce';};
+  recognitionDesc.onerror=()=>{recognitionDesc=null;btn.classList.remove('active');lbl.textContent='🎤 Di\' la descrizione con la voce';};
+  recognitionDesc.start();
+}
+
+// ── VOCE MISURE ──────────────────────────────────
+function toggleVoce(){isListening?stopVoce():startVoce();}
 
 function startVoce() {
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){showToast('⚠️ Usa Chrome');return;}
   recognition=new SR(); recognition.lang='it-IT'; recognition.continuous=false; recognition.interimResults=true;
-  recognition.onstart=()=>{ isListening=true; document.getElementById('micBtn').classList.add('active'); document.getElementById('micLabel').textContent='⏹ Tocca per fermare'; document.getElementById('voiceFeedback').classList.add('show'); document.getElementById('voiceFeedback').textContent='🎤 Dì: "lunghezza 5 virgola 50, larghezza 3, altezza 2"'; };
-  recognition.onresult=e=>{ const t=Array.from(e.results).map(r=>r[0].transcript).join(' ').toLowerCase(); document.getElementById('voiceFeedback').textContent='📝 "'+t+'"'; if(e.results[0].isFinal) parsaMisure(t); };
+  recognition.onstart=()=>{isListening=true;document.getElementById('micBtn').classList.add('active');document.getElementById('micLabel').textContent='⏹ Tocca per fermare';document.getElementById('voiceFeedback').classList.add('show');document.getElementById('voiceFeedback').textContent='🎤 Dì: "lunghezza 5 virgola 50, larghezza 3, altezza 2"';};
+  recognition.onresult=e=>{const t=Array.from(e.results).map(r=>r[0].transcript).join(' ').toLowerCase();document.getElementById('voiceFeedback').textContent='📝 "'+t+'"';if(e.results[0].isFinal)parsaMisure(t);};
   recognition.onerror=()=>stopVoce(); recognition.onend=()=>{if(isListening)stopVoce();};
   recognition.start();
 }
@@ -336,24 +364,24 @@ function startVoce() {
 function stopVoce() {
   isListening=false; if(recognition)recognition.stop();
   document.getElementById('micBtn').classList.remove('active');
-  document.getElementById('micLabel').textContent='🎤 Inserisci misure con la voce';
+  document.getElementById('micLabel').textContent='📏 Di\' le misure con la voce';
   setTimeout(()=>document.getElementById('voiceFeedback').classList.remove('show'),3000);
 }
 
 function parsaMisure(t) {
   t=t.replace(/virgola/g,'.').replace(/punto/g,'.').replace(/zero/g,'0').replace(/uno/g,'1').replace(/due/g,'2').replace(/tre/g,'3').replace(/quattro/g,'4').replace(/cinque/g,'5').replace(/sei/g,'6').replace(/sette/g,'7').replace(/otto/g,'8').replace(/nove/g,'9').replace(/dieci/g,'10').replace(/venti/g,'20').replace(/trenta/g,'30').replace(/quaranta/g,'40').replace(/cinquanta/g,'50').replace(/sessanta/g,'60').replace(/settanta/g,'70').replace(/ottanta/g,'80').replace(/novanta/g,'90').replace(/,/g,'.');
   let trovato={};
-  [['lunghezza|lung','fL'],['larghezza|larg','fLa'],['altezza|alt|profondità|prof','fA'],['ripetizioni|volte','fRip']].forEach(([k,f])=>{ const m=t.match(new RegExp('(?:'+k+')\\s*([\\d]+(?:\\.\\d+)?)','i')); if(m) trovato[f]=parseFloat(m[1]); });
-  if(!Object.keys(trovato).length){ const n=t.match(/\d+(?:\.\d+)?/g); if(n) ['fL','fLa','fA'].forEach((f,i)=>{if(n[i])trovato[f]=parseFloat(n[i]);}); }
-  if(!Object.keys(trovato).length){ document.getElementById('voiceFeedback').textContent='⚠️ Non capito. Riprova: "lunghezza 5, larghezza 3"'; return; }
+  [['lunghezza|lung','fL'],['larghezza|larg','fLa'],['altezza|alt|profondità|prof','fA'],['ripetizioni|volte','fRip']].forEach(([k,f])=>{const m=t.match(new RegExp('(?:'+k+')\\s*([\\d]+(?:\\.\\d+)?)','i'));if(m)trovato[f]=parseFloat(m[1]);});
+  if(!Object.keys(trovato).length){const n=t.match(/\d+(?:\.\d+)?/g);if(n)['fL','fLa','fA'].forEach((f,i)=>{if(n[i])trovato[f]=parseFloat(n[i]);});}
+  if(!Object.keys(trovato).length){document.getElementById('voiceFeedback').textContent='⚠️ Non capito. Riprova: "lunghezza 5, larghezza 3"';return;}
   Object.entries(trovato).forEach(([id,val])=>document.getElementById(id).value=val);
   calcola(); showToast('🎤 Misure inserite!');
 }
 
-function openLightbox(src) { document.getElementById('lightboxImg').src=src; document.getElementById('lightbox').classList.add('open'); }
-function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
-function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function openLightbox(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').classList.add('open');}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>
 </body>
 </html>
