@@ -35,12 +35,12 @@ body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--te
 .calc-box { background: var(--surface2); border: 1px solid var(--accent); border-radius: 8px; padding: 10px 12px; font-size: 14px; font-weight: 600; color: var(--accent2); text-align: center; margin: 8px 0; }
 .mic-btn { width: 100%; background: var(--surface2); border: 2px dashed var(--border); border-radius: 8px; color: var(--text-muted); font-family: 'Barlow', sans-serif; font-size: 14px; padding: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 8px 0; }
 .mic-btn.active { background: rgba(192,57,43,0.15); border-color: var(--danger); color: var(--danger); animation: pulse 1s infinite; }
-.mic-btn.verde { background: rgba(39,174,96,0.15); border-color: var(--green); color: var(--green); }
-.mic-btn.verde.active { background: rgba(39,174,96,0.3); animation: pulse 1s infinite; }
+.mic-btn.verde { background: rgba(39,174,96,0.1); border-color: var(--green); color: var(--green); }
+.mic-btn.verde.active { background: rgba(39,174,96,0.25); animation: pulse 1s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
-.nota-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin: 8px 0; font-size: 13px; color: var(--text-soft); min-height: 80px; display: none; }
+.nota-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin: 8px 0; display: none; }
 .nota-box.show { display: block; }
-.nota-box textarea { width: 100%; background: none; border: none; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 14px; resize: none; outline: none; min-height: 80px; }
+.nota-box textarea { width: 100%; background: none; border: none; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 14px; resize: none; outline: none; min-height: 80px; line-height: 1.5; }
 .btn-analizza { width: 100%; background: var(--green); color: #fff; border: none; border-radius: 10px; padding: 12px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 16px; cursor: pointer; margin-top: 6px; display: none; }
 .btn-analizza.show { display: block; }
 .foto-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
@@ -53,7 +53,7 @@ body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--te
 .export-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
 .export-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text-soft); font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 600; padding: 10px; cursor: pointer; text-align: center; }
 .voce-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; animation: fadeIn 0.2s ease; }
-@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 .voce-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
 .voce-num { background: var(--accent); color: #000; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; margin-top: 2px; }
 .voce-desc { flex: 1; font-size: 14px; font-weight: 600; }
@@ -73,8 +73,8 @@ body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--te
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .voice-feedback { background: rgba(192,57,43,0.1); border: 1px solid var(--danger); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--text-soft); margin: 8px 0; display: none; }
 .voice-feedback.show { display: block; }
-.loading { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.loading { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 6px; vertical-align: middle; }
+@keyframes spin { to{transform:rotate(360deg)} }
 </style>
 </head>
 <body>
@@ -94,18 +94,16 @@ body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--te
 </div>
 
 <!-- NOTA VOCALE MULTIPLA -->
-<div class="form-card" style="border-color:var(--green);margin-bottom:4px;">
+<div class="form-card" style="border-color:var(--green);">
   <div class="form-title" style="color:var(--green);">🎙 Nota Vocale Multipla</div>
-  <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">Parla liberamente e descrivi più lavorazioni — l'AI le converte in voci automaticamente</p>
+  <p style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">Parla liberamente — descrivi più lavorazioni, l'AI le converte automaticamente</p>
   <button class="mic-btn verde" id="micBtnNota" onclick="toggleNotaVocale()">
     🎙 <span id="micLabelNota">Inizia registrazione</span>
   </button>
   <div class="nota-box" id="notaBox">
-    <textarea id="notaTestoArea" placeholder="Il testo trascritto apparirà qui — puoi anche modificarlo prima di analizzarlo..."></textarea>
+    <textarea id="notaTestoArea" placeholder="Il testo trascritto apparirà qui — puoi correggerlo prima di analizzarlo..."></textarea>
   </div>
-  <button class="btn-analizza" id="btnAnalizza" onclick="analizzaNota()">
-    ✨ Analizza e crea voci
-  </button>
+  <button class="btn-analizza" id="btnAnalizza" onclick="analizzaNota()">✨ Analizza e crea voci</button>
 </div>
 
 <!-- FORM SINGOLA VOCE -->
@@ -172,12 +170,54 @@ body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--te
 <div class="toast" id="toast"></div>
 
 <script>
-let voci=[], fotoTemp=[], recognition=null, isListening=false, recognitionDesc=null, recognitionNota=null, isListeningNota=false;
+let voci=[], fotoTemp=[], recognition=null, isListening=false;
+let recognitionDesc=null, recognitionNota=null, isListeningNota=false;
 let cantieri={}, cantiereAttivo=null;
 
 document.getElementById('headerDate').textContent = new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 initCantieri();
 
+// ── DIZIONARIO EDILE ─────────────────────────────
+const DIZIONARIO_EDILE = `
+DIZIONARIO CORREZIONI TERMINI EDILI (trascrizione vocale → termine corretto):
+- "calce struzzo" / "calcestruzo" / "cls struzzo" / "calce strutto" → calcestruzzo
+- "laterizzio" / "latericchio" / "lateritio" / "latterizio" → laterizio
+- "intonaco civile" / "into naco" / "intonaci" → intonaco civile
+- "solaio" / "sollaio" / "solagio" → solaio
+- "fondazione" / "fondazioni" / "fondazione" → fondazioni
+- "tramezza" / "tramezzo" / "tramezza" → tramezza
+- "cappotto" / "capotto termico" → isolamento a cappotto
+- "massetto" / "maseto" / "massetti" → massetto
+- "impermeabilizzazione" / "impermeabilizazione" → impermeabilizzazione
+- "infisso" / "infissi" / "finestre" → infissi
+- "ponteggio" / "pontegi" / "ponte" → ponteggio
+- "scavo" / "scabi" / "scavare" → scavo
+- "rinterro" / "rinterri" / "rinterramento" → rinterro
+- "demolizione" / "demolire" / "buttare giù" → demolizione
+- "muratura" / "muro" / "murature" → muratura
+- "calcestruzzo armato" / "cemento armato" / "c.a." / "cls" → calcestruzzo armato
+- "tinteggiatura" / "tintegiatura" / "pittura" / "imbiancatura" → tinteggiatura
+- "rivestimento" / "rivestire" → rivestimento
+- "pavimentazione" / "pavimento" / "posa pavimento" → pavimentazione
+- "posa piastrelle" / "piastrelle" → posa piastrelle
+- "coibentazione" / "coibentare" / "isolamento" → coibentazione
+- "copertura" / "tetto" / "copertura tetto" → copertura
+- "grondaia" / "grondaie" / "gronde" → grondaie
+- "pluviale" / "pluviali" / "tubo discesa" → pluviali
+- "controsoffitto" / "controsoffitti" / "cartongesso soffitto" → controsoffitto
+- "cartongesso" / "cartone gesso" / "lastra gesso" → cartongesso
+- "vespaio" / "vespai" / "vespaio aerato" → vespaio aerato
+- "drenaggio" / "dreno" / "tubo drenante" → drenaggio
+- "fognatura" / "fogna" / "tubo fogna" → fognatura
+- "impianto idrico" / "idraulica" / "tubi acqua" → impianto idrico
+- "impianto elettrico" / "impianto luce" / "cablaggio" → impianto elettrico
+- "mq" / "m quadri" / "metri quadri" / "metri quadrati" / "metro quadro" → m²
+- "mc" / "m cubi" / "metri cubi" / "metro cubo" → m³
+- "ml" / "metri lineari" / "metri liniari" / "metro lineare" → m
+- "cad" / "cadauno" / "al pezzo" / "a pezzo" → cad
+`;
+
+// ── CANTIERI ─────────────────────────────────────
 function initCantieri() {
   try { const r=localStorage.getItem('cantieretalk_v2'); if(r) cantieri=JSON.parse(r); } catch(e){}
   if(!Object.keys(cantieri).length) nuovoCantiere('Cantiere 1',false);
@@ -235,19 +275,32 @@ function startNotaVocale() {
   recognitionNota.lang='it-IT';
   recognitionNota.continuous=true;
   recognitionNota.interimResults=true;
+  
+  let testoFinale = '';
+  
   recognitionNota.onstart=()=>{
     isListeningNota=true;
+    testoFinale='';
     document.getElementById('micBtnNota').classList.add('active');
     document.getElementById('micLabelNota').textContent='⏹ In ascolto... tocca per fermare';
     document.getElementById('notaBox').classList.add('show');
     document.getElementById('notaTestoArea').value='';
     document.getElementById('btnAnalizza').classList.remove('show');
   };
- recognitionNota.onresult=e=>{
-    let testo='';
-    for(let i=0;i<e.results.length;i++) testo+=e.results[i][0].transcript+' ';
-    document.getElementById('notaTestoArea').value=testo.trim();
+  
+  recognitionNota.onresult=e=>{
+    // Prendi solo risultati FINALI — evita ripetizioni
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal){
+        testoFinale += e.results[i][0].transcript + ' ';
+        document.getElementById('notaTestoArea').value = testoFinale.trim();
+      } else {
+        // Mostra testo intermedio ma non salvarlo
+        document.getElementById('notaTestoArea').value = (testoFinale + e.results[i][0].transcript).trim();
+      }
+    }
   };
+  
   recognitionNota.onerror=()=>stopNotaVocale();
   recognitionNota.onend=()=>{if(isListeningNota)stopNotaVocale();};
   recognitionNota.start();
@@ -259,9 +312,9 @@ function stopNotaVocale() {
   document.getElementById('micBtnNota').classList.remove('active');
   document.getElementById('micLabelNota').textContent='🎙 Inizia registrazione';
   const testo=document.getElementById('notaTestoArea').value.trim();
-  if(testo.length>5) {
+  if(testo.length>5){
     document.getElementById('btnAnalizza').classList.add('show');
-    showToast('✅ Registrazione completata — clicca Analizza!');
+    showToast('✅ Registrazione completata!');
   }
 }
 
@@ -273,61 +326,58 @@ async function analizzaNota() {
   btn.disabled=true;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: `Sei un assistente per contabilità edile. Analizza questo testo e estrai le lavorazioni menzionate.
-          
-Testo: "${testo}"
+    const response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        messages:[{
+          role:'user',
+          content:`Sei un esperto di contabilità edile italiana. Ricevi una trascrizione vocale automatica che può contenere errori — correggi automaticamente i termini edili sbagliati usando questo dizionario:
 
-Rispondi SOLO con un array JSON valido, senza testo aggiuntivo, nel formato:
-[
-  {"desc": "descrizione lavorazione", "um": "m²", "l": 5.5, "la": 3.0, "a": 0, "r": 1, "note": "eventuali note"},
-  ...
-]
+${DIZIONARIO_EDILE}
+
+Testo trascritto: "${testo}"
+
+Analizza il testo, correggi i termini edili e estrai TUTTE le lavorazioni menzionate.
+Rispondi SOLO con un array JSON valido, senza testo aggiuntivo, senza backtick:
+[{"desc":"descrizione corretta","um":"m²","l":5.5,"la":3.0,"a":0,"r":1,"note":"note"},...]
 
 Regole:
-- um può essere: m², m³, m, cad, kg, t, ore
-- l = lunghezza, la = larghezza, a = altezza/profondità
-- Se non ci sono misure usa 0
-- r = numero di ripetizioni (default 1)
-- Estrai tutte le lavorazioni che riesci a identificare`
+- Correggi errori di trascrizione
+- um: m², m³, m, cad, kg, t, ore
+- l=lunghezza, la=larghezza, a=altezza — se non specificato usa 0
+- r=ripetizioni (default 1)
+- Nelle note scrivi le misure originali se ambigue`
         }]
       })
     });
 
-    const data = await response.json();
-    const testo_risposta = data.content[0].text.trim();
-    
-    // Pulisci e parsa il JSON
-    const json_clean = testo_risposta.replace(/```json|```/g,'').trim();
-    const lavorazioni = JSON.parse(json_clean);
+    const data=await response.json();
+    const testo_risposta=data.content[0].text.trim();
+    const json_clean=testo_risposta.replace(/```json|```/g,'').trim();
+    const lavorazioni=JSON.parse(json_clean);
 
-    if(!Array.isArray(lavorazioni)||lavorazioni.length===0){
+    if(!Array.isArray(lavorazioni)||!lavorazioni.length){
       showToast('⚠️ Nessuna lavorazione trovata');
       btn.innerHTML='✨ Analizza e crea voci';
       btn.disabled=false;
       return;
     }
 
-    // Aggiungi le voci
     lavorazioni.forEach(l=>{
-      const q = l.um==='m²' ? (l.l||0)*((l.la||0)||(l.a||0)||1)*(l.r||1) :
-                l.um==='m³' ? (l.l||0)*(l.la||0)*(l.a||0)*(l.r||1) :
-                l.um==='m' ? (l.l||0)*(l.r||1) : (l.r||1);
+      const q=l.um==='m²'?(l.l||0)*((l.la||0)||(l.a||0)||1)*(l.r||1):
+               l.um==='m³'?(l.l||0)*(l.la||0)*(l.a||0)*(l.r||1):
+               l.um==='m'?(l.l||0)*(l.r||1):(l.r||1);
       voci.push({
         id:Date.now()+Math.random(),
         desc:l.desc||'Lavorazione',
         um:l.um||'m²',
-        l:l.l||0, la:l.la||0, a:l.a||0, r:l.r||1,
-        q, prezzo:0, importo:0,
-        note:l.note||'📝 Da nota vocale',
-        foto:[], data:new Date().toLocaleDateString('it-IT')
+        l:l.l||0,la:l.la||0,a:l.a||0,r:l.r||1,
+        q,prezzo:0,importo:0,
+        note:(l.note||'')+'📝 Da nota vocale',
+        foto:[],data:new Date().toLocaleDateString('it-IT')
       });
     });
 
@@ -342,7 +392,6 @@ Regole:
     showToast('❌ Errore analisi. Riprova!');
     console.error(err);
   }
-
   btn.innerHTML='✨ Analizza e crea voci';
   btn.disabled=false;
 }
@@ -442,9 +491,9 @@ function aggiungiVoce() {
     la:parseFloat(document.getElementById('fLa').value)||0,
     a:parseFloat(document.getElementById('fA').value)||0,
     r:parseFloat(document.getElementById('fRip').value)||1,
-    q, prezzo:parseFloat(document.getElementById('fPrezzo').value)||0,
-    importo:imp, note:document.getElementById('fNote').value.trim(),
-    foto:[...fotoTemp], data:new Date().toLocaleDateString('it-IT')
+    q,prezzo:parseFloat(document.getElementById('fPrezzo').value)||0,
+    importo:imp,note:document.getElementById('fNote').value.trim(),
+    foto:[...fotoTemp],data:new Date().toLocaleDateString('it-IT')
   });
   ['fDesc','fL','fLa','fA','fNote','fPrezzo'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fRip').value='1';
