@@ -243,7 +243,7 @@ function startNotaVocale() {
     document.getElementById('notaTestoArea').value='';
     document.getElementById('btnAnalizza').classList.remove('show');
   };
-  recognitionNota.onresult=e=>{
+ recognitionNota.onresult=e=>{
     let testo='';
     for(let i=0;i<e.results.length;i++) testo+=e.results[i][0].transcript+' ';
     document.getElementById('notaTestoArea').value=testo.trim();
