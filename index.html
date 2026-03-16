@@ -126,7 +126,7 @@ body { font-family: 'Barlow', sans-serif; background: var(--bg); color: var(--te
     <div class="foto-row" id="fotoPreview">
       <button class="foto-add" onclick="document.getElementById('fotoInput').click()">+</button>
     </div>
-    <input type="file" id="fotoInput" accept="image/*" multiple style="display:none" onchange="aggiungiPhoto(event)">
+  <input type="file" id="fotoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="aggiungiPhoto(event)">
   </div>
   <button class="btn-primary" onclick="aggiungiVoce()">✓ Aggiungi Voce</button>
 </div>
