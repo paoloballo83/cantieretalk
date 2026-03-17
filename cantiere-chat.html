@@ -325,7 +325,7 @@ async function send(){
   CH.push({role:'user',content:txt});scrl();
   const typ=showTyp();
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,system:sys(),messages:CH.map(m=>({role:m.role,content:m.content}))})});
     const d=await r.json();
     const ans=d.content.map(b=>b.text||'').join('');
@@ -425,7 +425,7 @@ async function loadDoc(tipo,event){
       'Analizza questa fattura materiali edili italiana. SOLO JSON:\n{"fo":"fornitore","da":"data","num":"numero","tot":0,"imp":0,"iva":0,"mat":[{"d":"desc","u":"um","q":0,"p":0,"i":0}],"note":""}';
     const cb=isPDF?{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64d}}:
                    {type:'image',source:{type:'base64',media_type:file.type,data:b64d}};
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:[cb,{type:'text',text:prompt}]}]})});
     if(!r.ok)throw new Error('Errore API '+r.status);
     const data=await r.json();
@@ -488,7 +488,7 @@ async function dc(tipo){
     const s2=`Sei un assistente edile. Analizza i ${tipo==='p'?'preventivi':'fatture'} e rispondi.\nUsa 🏢 per documenti, 📗 Marche, 🏚 Sisma.\n${tipo==='p'?'PREVENTIVI':'FATTURE'}:\n${ctx}\nPREZZARIO MARCHE:\n${(window.PM||'').substring(0,5000)}`;
     const hist=tipo==='p'?PH:FH;
     hist.push({role:'user',content:txt});
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:s2,messages:hist})});
     const data=await r.json();
     const ans=data.content[0].text;
