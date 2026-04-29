@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>📐 Contabilità Cantiere</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f0f0e;--surface:#1a1917;--surface2:#242320;--border:#2e2c28;--accent:#e8a020;--accent2:#f5c842;--text:#f0ede8;--text-muted:#7a7670;--text-soft:#b0aba3;--green:#27ae60;--danger:#c0392b;--blue:#2980b9;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:72px;}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.header-left{flex:1;}
+.header-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;color:var(--accent);}
+.header-sub{font-size:11px;color:var(--text-muted);}
+.header-right{display:flex;align-items:center;gap:8px;}
+.totale-badge{background:var(--accent);color:#000;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;padding:4px 12px;border-radius:20px;}
+.sync-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;white-space:nowrap;}
+.sync-ok{background:rgba(39,174,96,0.2);color:var(--green);border:1px solid var(--green);}
+.sync-wait{background:rgba(232,160,32,0.2);color:var(--accent);border:1px solid var(--accent);}
+.sync-err{background:rgba(192,57,43,0.2);color:var(--danger);border:1px solid var(--danger);}
+.cantiere-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:8px;overflow-x:auto;white-space:nowrap;}
+.cantiere-tab{background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--text-soft);font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;padding:6px 14px;cursor:pointer;flex-shrink:0;transition:all 0.15s;}
+.cantiere-tab.active{background:var(--accent);color:#000;border-color:var(--accent);}
+.cantiere-add{background:none;border:2px dashed var(--border);border-radius:20px;color:var(--text-muted);font-size:20px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cantiere-info{font-size:12px;color:var(--text-muted);padding:6px 16px;display:flex;align-items:center;justify-content:space-between;}
+.cantiere-del{background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:20;}
+.nav-btn{flex:1;background:none;border:none;color:var(--text-muted);font-family:'Barlow',sans-serif;font-size:10px;font-weight:600;padding:9px 2px 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:color 0.15s;}
+.nav-btn .nav-icon{font-size:18px;}
+.nav-btn.active{color:var(--accent);}
+.section{display:none;}
+.section.active{display:block;}
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:12px;padding:16px;}
+.form-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--accent);text-transform:uppercase;margin-bottom:12px;}
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Barlow',sans-serif;font-size:15px;padding:10px 12px;outline:none;-webkit-appearance:none;}
+.field textarea{resize:vertical;min-height:80px;line-height:1.5;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.btn-primary{width:100%;background:var(--accent);color:#000;border:none;border-radius:10px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:17px;cursor:pointer;margin-top:8px;}
+.btn-blue{width:100%;background:var(--blue);color:#fff;border:none;border-radius:10px;padding:13px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;cursor:pointer;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.mic-btn{width:100%;background:var(--surface2);border:2px dashed var(--border);border-radius:8px;color:var(--text-muted);font-family:'Barlow',sans-serif;font-size:14px;padding:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0;}
+.mic-btn.active{background:rgba(192,57,43,0.15);border-color:var(--danger);color:var(--danger);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.calc-box{background:var(--surface2);border:1px solid var(--accent);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:600;color:var(--accent2);text-align:center;margin:8px 0;}
+.voice-feedback{background:rgba(192,57,43,0.1);border:1px solid var(--danger);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text-soft);margin:8px 0;display:none;}
+.voice-feedback.show{display:block;}
+.foto-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.foto-thumb{width:70px;height:70px;object-fit:cover;border-radius:8px;border:2px solid var(--border);}
+.foto-add{width:70px;height:70px;border:2px dashed var(--border);border-radius:8px;background:none;color:var(--text-muted);font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.voci-section{margin:0 12px;}
+.voci-header{display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;}
+.voci-header h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;}
+.export-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.export-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-soft);font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;padding:10px;cursor:pointer;text-align:center;}
+.voce-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;animation:fadeIn 0.2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.voce-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.voce-num{background:var(--accent);color:#000;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;padding:2px 8px;border-radius:4px;flex-shrink:0;margin-top:2px;}
+.voce-desc{flex:1;font-size:14px;font-weight:600;}
+.voce-del{background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
+.voce-misure{display:flex;flex-wrap:wrap;gap:8px;font-size:13px;color:var(--text-soft);}
+.chip{background:var(--surface2);border-radius:4px;padding:2px 8px;}
+.importo{color:var(--accent2);font-weight:700;font-size:14px;}
+.voce-note{font-size:12px;color:var(--text-muted);font-style:italic;margin-top:6px;border-left:2px solid var(--border);padding-left:8px;}
+.voce-foto{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.voce-foto img{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:14px;}
+/* NOTE */
+.note-section{margin:12px;}
+.note-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;animation:fadeIn 0.2s ease;}
+.note-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;}
+.note-card-titolo{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:var(--accent);}
+.note-card-data{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.note-card-testo{font-size:14px;color:var(--text-soft);line-height:1.6;white-space:pre-wrap;border-top:1px solid var(--border);padding-top:8px;margin-top:6px;}
+/* DOC */
+.doc-section{margin:12px;}
+.doc-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;animation:fadeIn 0.2s ease;}
+.doc-card-top{display:flex;align-items:flex-start;gap:10px;}
+.doc-icon{font-size:28px;flex-shrink:0;margin-top:2px;}
+.doc-info{flex:1;min-width:0;}
+.doc-nome{font-size:14px;font-weight:600;}
+.doc-tipo-badge{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent);padding:1px 6px;margin-top:3px;}
+.doc-meta{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.doc-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.doc-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-soft);font-size:13px;padding:7px 12px;cursor:pointer;font-weight:600;}
+.doc-btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;}
+.doc-btn.danger{border-color:var(--danger);color:var(--danger);}
+/* DRIVE BANNER */
+.drive-banner{background:linear-gradient(135deg,#1a73e8,#0d47a1);border-radius:12px;margin:12px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer;}
+.drive-banner-icon{font-size:36px;flex-shrink:0;}
+.drive-banner-text .t1{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:18px;color:#fff;}
+.drive-banner-text .t2{font-size:12px;color:rgba(255,255,255,0.8);margin-top:2px;}
+/* PRESENZE */
+.pres-section{margin:12px;}
+.giornata-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;animation:fadeIn 0.2s ease;}
+.giornata-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;}
+.giornata-data{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:17px;color:var(--accent);}
+.giornata-meta{font-size:12px;color:var(--text-muted);margin-top:1px;}
+.giornata-badge{background:var(--accent);color:#000;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;padding:3px 10px;border-radius:12px;}
+.giornata-body{padding:0 14px 12px;border-top:1px solid var(--border);}
+.op-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.op-row:last-child{border-bottom:none;}
+.op-avatar{background:var(--surface2);border:1px solid var(--border);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;margin-top:2px;}
+.op-info{flex:1;}
+.op-nome{font-size:14px;font-weight:700;}
+.op-qualifica{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text-muted);padding:1px 6px;margin:3px 0;}
+.op-attivita{font-size:13px;color:var(--text-soft);line-height:1.5;margin-top:2px;}
+.op-ore{font-size:12px;color:var(--accent2);font-weight:700;white-space:nowrap;flex-shrink:0;margin-top:4px;}
+.giornata-note-label{font-size:12px;color:var(--text-muted);font-style:italic;padding:8px 0 0;border-top:1px solid var(--border);margin-top:4px;}
+.op-temp-list{margin:8px 0;}
+.op-temp-row{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.op-temp-info{flex:1;font-size:13px;}
+.op-temp-nome{font-weight:700;}
+.op-temp-det{color:var(--text-muted);font-size:12px;margin-top:2px;}
+.op-temp-del{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;flex-shrink:0;}
+.section-header{padding:14px 16px 4px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:space-between;}
+.count-badge{background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--text-muted);padding:2px 8px;}
+.sub-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;}
+.sub-box-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin-bottom:10px;}
+.edit-op-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-soft);font-size:12px;padding:4px 8px;cursor:pointer;white-space:nowrap;}
+.edit-op-btn.danger{border-color:var(--danger);color:var(--danger);}
+.icon-btn{background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted);padding:4px;}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface);border:1px solid var(--accent);border-radius:16px;padding:20px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;color:var(--accent);margin-bottom:6px;}
+.modal-sub{font-size:13px;color:var(--text-soft);margin-bottom:16px;line-height:1.5;}
+.modal-step{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.modal-step:last-of-type{border-bottom:none;}
+.step-num{background:var(--accent);color:#000;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.step-text{font-size:13px;color:var(--text-soft);line-height:1.5;}
+.modal-btns{display:flex;gap:8px;margin-top:16px;}
+.modal-btn{flex:1;padding:13px;border:none;border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;cursor:pointer;}
+.modal-btn.primary{background:var(--accent);color:#000;}
+.modal-btn.sec{background:var(--surface2);color:var(--text-soft);border:1px solid var(--border);}
+/* LIGHTBOX */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:1000;align-items:center;justify-content:center;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:95vw;max-height:90vh;border-radius:8px;}
+.lightbox-close{position:fixed;top:16px;right:16px;color:#fff;font-size:32px;cursor:pointer;background:rgba(0,0,0,0.5);border:none;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:#fff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:24px;opacity:0;transition:all 0.3s;pointer-events:none;z-index:300;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.link-input-wrap{display:flex;gap:6px;align-items:flex-end;}
+.link-input-wrap input{flex:1;}
+.link-input-wrap .paste-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-soft);font-size:13px;padding:10px 12px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-title">📐 Contabilità Cantiere</div>
+    <div class="header-sub" id="headerDate"></div>
+  </div>
+  <div class="header-right">
+    <span class="sync-badge sync-wait" id="syncBadge">⏳ Connessione...</span>
+    <div class="totale-badge" id="totaleBadge">€ 0,00</div>
+  </div>
+</div>
+
+<div class="cantiere-bar" id="cantiereTabs"></div>
+<div class="cantiere-info">
+  <span id="cantiereLabel">📍</span>
+  <button class="cantiere-del" onclick="eliminaCantiere()">🗑 Elimina cantiere</button>
+</div>
+
+<!-- ══ MISURE ══ -->
+<div id="sec-misure" class="section active">
+  <div class="form-card">
+    <div class="form-title">➕ Voce Singola</div>
+    <div class="field"><label>Descrizione lavorazione</label><input type="text" id="fDesc" placeholder="Es: Intonaco civile parete nord..."></div>
+    <button class="mic-btn" id="micBtnDesc" onclick="toggleVoceDesc()">🎤 <span id="micLabelDesc">Di' la descrizione con la voce</span></button>
+    <div class="grid2">
+      <div class="field"><label>U.M.</label><select id="fUm" onchange="calcola()"><option>m²</option><option>m³</option><option>m</option><option>cad</option><option>kg</option><option>t</option><option>ore</option></select></div>
+      <div class="field"><label>Ripetizioni</label><input type="number" id="fRip" value="1" min="1" oninput="calcola()"></div>
+    </div>
+    <div class="grid3">
+      <div class="field"><label>L (m)</label><input type="number" id="fL" step="0.01" placeholder="0.00" oninput="calcola()"></div>
+      <div class="field"><label>La (m)</label><input type="number" id="fLa" step="0.01" placeholder="0.00" oninput="calcola()"></div>
+      <div class="field"><label>A/P (m)</label><input type="number" id="fA" step="0.01" placeholder="0.00" oninput="calcola()"></div>
+    </div>
+    <button class="mic-btn" id="micBtn" onclick="toggleVoce()">📏 <span id="micLabel">Di' le misure con la voce</span></button>
+    <div class="voice-feedback" id="voiceFeedback"></div>
+    <div class="calc-box" id="calcBox">📏 Quantità: —</div>
+    <div class="field"><label>Prezzo unitario (€)</label><input type="number" id="fPrezzo" step="0.01" placeholder="0.00" oninput="calcola()"></div>
+    <div class="field"><label>Note</label><input type="text" id="fNote" placeholder="Note, riferimenti..."></div>
+    <div class="field">
+      <label>📷 Foto (salvate solo localmente)</label>
+      <div class="foto-row" id="fotoPreview"><button class="foto-add" onclick="document.getElementById('fotoInput').click()">+</button></div>
+      <input type="file" id="fotoInput" accept="image/*" capture="environment" multiple style="display:none" onchange="aggiungiPhoto(event)">
+    </div>
+    <button class="btn-primary" onclick="aggiungiVoce()">✓ Aggiungi Voce</button>
+  </div>
+  <div class="voci-section">
+    <div class="voci-header"><h2>📋 Voci (<span id="voceCount">0</span>)</h2></div>
+    <div class="export-row">
+      <button class="export-btn" onclick="exportExcel()">📊 Excel</button>
+      <button class="export-btn" onclick="exportPDF()">📄 PDF</button>
+      <button class="export-btn" onclick="backupJSON()">💾 Backup</button>
+      <button class="export-btn" onclick="document.getElementById('ripristinaInput').click()" style="color:var(--accent)">📂 Ripristina</button>
+    </div>
+    <input type="file" id="ripristinaInput" accept=".json" style="display:none" onchange="ripristinaJSON(event)">
+    <div id="vociList"><div class="empty-state">Nessuna voce.</div></div>
+  </div>
+</div>
+
+<!-- ══ NOTE ══ -->
+<div id="sec-note" class="section">
+  <div class="form-card">
+    <div class="form-title">📝 Nuova Nota</div>
+    <div class="field"><label>Titolo</label><input type="text" id="nTitolo" placeholder="Es: Riunione DL, Problema fondazioni..."></div>
+    <div class="field"><label>Testo</label><textarea id="nTesto" placeholder="Scrivi la nota qui..."></textarea></div>
+    <button class="mic-btn" id="micBtnNote" onclick="toggleVoceNota()">🎤 <span id="micLabelNote">Dettatura vocale</span></button>
+    <button class="btn-primary" onclick="aggiungiNota()">✓ Salva Nota</button>
+  </div>
+  <div class="note-section">
+    <div class="section-header">Note cantiere <span class="count-badge" id="noteCount">0</span></div>
+    <div id="noteList"><div class="empty-state">Nessuna nota ancora.</div></div>
+  </div>
+</div>
+
+<!-- ══ DOCUMENTI ══ -->
+<div id="sec-doc" class="section">
+
+  <!-- BANNER APRI DRIVE -->
+  <div class="drive-banner" onclick="apriDrive()">
+    <div class="drive-banner-icon">📂</div>
+    <div class="drive-banner-text">
+      <div class="t1">Apri Google Drive</div>
+      <div class="t2">Carica PDF e foto dal tuo Drive</div>
+    </div>
+    <div style="color:rgba(255,255,255,0.7);font-size:22px;">→</div>
+  </div>
+
+  <div class="form-card">
+    <div class="form-title">📁 Registra Documento</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Carica il file su Google Drive, poi copia il link di condivisione e incollalo qui.</p>
+    <div class="field"><label>Nome documento</label><input type="text" id="dNome" placeholder="Es: POS Rev.2, DURC Impresa..."></div>
+    <div class="field"><label>Tipo</label>
+      <select id="dTipo"><option>POS</option><option>DURC</option><option>DURC Congruità</option><option>PSC</option><option>Contratto</option><option>DDT</option><option>Fattura</option><option>Permesso</option><option>Planimetria</option><option>Collaudo</option><option>Foto cantiere</option><option>Altro</option></select>
+    </div>
+    <div class="field">
+      <label>Link Google Drive</label>
+      <div class="link-input-wrap">
+        <input type="url" id="dLink" placeholder="https://drive.google.com/file/d/...">
+        <button class="paste-btn" onclick="incollaLink()">📋 Incolla</button>
+      </div>
+    </div>
+    <div class="field"><label>Note (opzionale)</label><input type="text" id="dNote" placeholder="Revisione, scadenza, riferimento..."></div>
+    <button class="btn-primary" onclick="aggiungiDocumento()">✓ Salva Documento</button>
+  </div>
+
+  <div class="doc-section">
+    <div class="section-header">Documenti <span class="count-badge" id="docCount">0</span></div>
+    <div id="docList"><div class="empty-state">Nessun documento ancora.<br>Carica i file su Drive e registra il link 👆</div></div>
+  </div>
+</div>
+
+<!-- ══ PRESENZE ══ -->
+<div id="sec-pres" class="section">
+  <div class="form-card">
+    <div class="form-title">👷 Registra Giornata</div>
+
+    <div class="field"><label>Data</label><input type="date" id="pData"></div>
+
+    <!-- CALCOLO PRINCIPALE -->
+    <div style="background:rgba(232,160,32,0.08);border:1px solid var(--accent);border-radius:10px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--accent);margin-bottom:12px;">⚡ Operai in cantiere</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">N° Operai</span>
+          <input type="number" id="pNOperai" min="1" max="99" value="1"
+            style="width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:26px;font-weight:800;text-align:center;padding:8px 4px;outline:none;font-family:'Barlow Condensed',sans-serif;"
+            oninput="aggiornaTotaleForm()">
+        </div>
+        <div style="font-size:28px;color:var(--text-muted);padding-top:18px;">×</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Ore</span>
+          <input type="number" id="pOreStd" min="0.5" max="24" step="0.5" value="8"
+            style="width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:26px;font-weight:800;text-align:center;padding:8px 4px;outline:none;font-family:'Barlow Condensed',sans-serif;"
+            oninput="aggiornaTotaleForm()">
+        </div>
+        <div style="font-size:28px;color:var(--text-muted);padding-top:18px;">=</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Totale</span>
+          <div id="pTotaleOre" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:28px;color:var(--accent2);padding-top:8px;">8h</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ECCEZIONI (ore diverse) -->
+    <div style="margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin-bottom:8px;">➕ Operaio con ore diverse (opzionale)</div>
+      <div class="grid2" style="margin-bottom:6px;">
+        <div class="field" style="margin-bottom:0;"><label>Nome</label><input type="text" id="eccNome" placeholder="Es: Mario Rossi"></div>
+        <div class="field" style="margin-bottom:0;"><label>Ore</label><input type="number" id="eccOre" step="0.5" min="0.5" max="24" placeholder="4"></div>
+      </div>
+      <button onclick="aggiungiEccezione()" style="width:100%;background:var(--surface2);border:1px dashed var(--border);border-radius:8px;color:var(--text-soft);font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;padding:10px;cursor:pointer;">+ Aggiungi riga</button>
+      <div id="eccezioniList" style="margin-top:6px;"></div>
+    </div>
+
+    <!-- NOTE -->
+    <div class="field">
+      <label>📝 Note</label>
+      <textarea id="pNote" rows="3" placeholder="Nomi, attività svolte, meteo, consegne materiali..."></textarea>
+    </div>
+
+    <button class="btn-primary" onclick="salvaGiornata()">✓ Salva Giornata</button>
+  </div>
+
+  <div class="pres-section">
+    <div class="section-header">Registro presenze <span class="count-badge" id="presCount">0 giorni</span></div>
+    <div id="presList"><div class="empty-state">Nessuna presenza registrata ancora.</div></div>
+  </div>
+</div>
+
+<!-- MODAL GMAIL -->
+<div class="modal-overlay" id="gmailModal">
+  <div class="modal-box">
+    <div class="modal-title">📧 Invia Riepilogo</div>
+    <div class="modal-sub">Si aprirà Gmail con tutte le informazioni del cantiere. I link ai documenti Drive saranno inclusi nel testo.</div>
+    <div class="modal-btns">
+      <button class="modal-btn sec" onclick="chiudiModal()">Annulla</button>
+      <button class="modal-btn primary" onclick="eseguiGmail()">✉️ Apri Gmail</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MODIFICA OPERAIO -->
+<div class="modal-overlay" id="editOpModal">
+  <div class="modal-box">
+    <div class="modal-title">✏️ Modifica Operaio</div>
+    <input type="hidden" id="editOpGId"><input type="hidden" id="editOpId">
+    <div class="field"><label>Nome e Cognome</label><input type="text" id="editOpNome"></div>
+    <div class="field"><label>Qualifica</label>
+      <select id="editOpQual"><option>Muratore</option><option>Carpentiere</option><option>Ferraiolo</option><option>Elettricista</option><option>Idraulico</option><option>Gruista</option><option>Manovale</option><option>Caposquadra</option><option>Geometra</option><option>Subappaltatore</option><option>Altro</option></select>
+    </div>
+    <div class="field"><label>Attività svolta</label><input type="text" id="editOpAtt"></div>
+    <div class="field"><label>Ore lavorate</label><input type="number" id="editOpOre" step="0.5" min="0.5" max="24"></div>
+    <div class="modal-btns">
+      <button class="modal-btn sec" onclick="chiudiEditOp()">Annulla</button>
+      <button class="modal-btn primary" onclick="salvaEditOp()">✓ Salva</button>
+    </div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close">✕</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="bottom-nav">
+  <button class="nav-btn active" id="nav-misure" onclick="switchSection('misure')"><span class="nav-icon">📐</span>Misure</button>
+  <button class="nav-btn" id="nav-note" onclick="switchSection('note')"><span class="nav-icon">📝</span>Note</button>
+  <button class="nav-btn" id="nav-doc" onclick="switchSection('doc')"><span class="nav-icon">📁</span>Doc</button>
+  <button class="nav-btn" id="nav-pres" onclick="switchSection('pres')"><span class="nav-icon">👷</span>Presenze</button>
+  <button class="nav-btn" onclick="apriModalGmail()"><span class="nav-icon">📧</span>Gmail</button>
+</div>
+
+<!-- FIREBASE SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<script>
+// ── FIREBASE CONFIG ──────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyDl7RSwfrwHl96CVq019sOo51Ip_GyjZPI",
+  authDomain: "cantieretalk.firebaseapp.com",
+  projectId: "cantieretalk",
+  storageBucket: "cantieretalk.firebasestorage.app",
+  messagingSenderId: "1046411602539",
+  appId: "1:1046411602539:web:4a8f35cea5ec86fd4adf2e"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const DOC_ID = 'paoloballo83'; // ID fisso utente
+let syncTimeout = null;
+let firestoreOk = false;
+
+// ── STATE ────────────────────────────────────────
+let voci=[],note=[],documenti=[],presenze=[],opTemp=[];
+let fotoTemp=[];
+let recognition=null,isListening=false;
+let recognitionDesc=null,recognitionNota=null,recognitionPres=null;
+let cantieri={},cantiereAttivo=null;
+let _skipRemote=false; // flag per evitare loop onSnapshot
+
+(function(){
+  const d=new Date();
+  document.getElementById('pData').value=d.toISOString().slice(0,10);
+  document.getElementById('headerDate').textContent=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+})();
+
+// ── FIREBASE SYNC ────────────────────────────────
+function setSyncBadge(stato){
+  const b=document.getElementById('syncBadge');
+  if(stato==='ok'){b.className='sync-badge sync-ok';b.textContent='☁️ Sincronizzato';}
+  else if(stato==='wait'){b.className='sync-badge sync-wait';b.textContent='⏳ Salvataggio...';}
+  else{b.className='sync-badge sync-err';b.textContent='⚠️ Offline';}
+}
+
+// Ascolta in tempo reale
+db.collection('cantieri').doc(DOC_ID).onSnapshot(snap=>{
+  if(_skipRemote){_skipRemote=false;return;}
+  if(snap.exists){
+    const data=snap.data();
+    if(data.cantieri){
+      // Merge: mantieni foto locali (non salvate su Firestore)
+      const remote=data.cantieri;
+      // Per ogni cantiere, mantieni le foto locali delle voci
+      Object.keys(remote).forEach(id=>{
+        if(cantieri[id]){
+          remote[id].voci=(remote[id].voci||[]).map(rv=>{
+            const lv=(cantieri[id].voci||[]).find(v=>v.id===rv.id);
+            return lv?{...rv,foto:lv.foto||[]}:rv;
+          });
+        }
+      });
+      cantieri=remote;
+      if(cantiereAttivo&&cantieri[cantiereAttivo]){
+        caricaCantiere(cantiereAttivo);
+      } else {
+        cantiereAttivo=Object.keys(cantieri)[0];
+        caricaCantiere(cantiereAttivo);
+      }
+      salvaLocale();renderTabs();renderAll();
+    }
+    firestoreOk=true;setSyncBadge('ok');
+  }
+},(err)=>{setSyncBadge('err');});
+
+async function salvaSuFirestore(){
+  setSyncBadge('wait');
+  // Rimuovi foto base64 prima di salvare (troppo grandi per Firestore)
+  const cantieriNoFoto={};
+  Object.entries(cantieri).forEach(([id,c])=>{
+    cantieriNoFoto[id]={
+      nome:c.nome,
+      note:c.note||[],
+      documenti:c.documenti||[],
+      presenze:c.presenze||[],
+      voci:(c.voci||[]).map(v=>({...v,foto:[]}))
+    };
+  });
+  try{
+    _skipRemote=true;
+    await db.collection('cantieri').doc(DOC_ID).set({cantieri:cantieriNoFoto,aggiornato:new Date().toISOString()});
+    setSyncBadge('ok');firestoreOk=true;
+  }catch(e){setSyncBadge('err');showToast('⚠️ Errore sync cloud');}
+}
+
+function salvaLocale(){
+  try{localStorage.setItem('cantieretalk_v3',JSON.stringify(cantieri));}catch(e){}
+}
+
+function salva(){
+  salvaCorrente();salvaLocale();
+  // Debounce 1.5s per non spammare Firestore
+  clearTimeout(syncTimeout);
+  syncTimeout=setTimeout(()=>salvaSuFirestore(),1500);
+}
+
+// ── CANTIERI ─────────────────────────────────────
+function initCantieri(){
+  // Prima carica da localStorage
+  try{const r=localStorage.getItem('cantieretalk_v3');if(r)cantieri=JSON.parse(r);}catch(e){}
+  if(!Object.keys(cantieri).length){
+    try{const r2=localStorage.getItem('cantieretalk_v2');if(r2){const d=JSON.parse(r2);Object.entries(d).forEach(([id,c])=>{cantieri[id]={nome:c.nome,voci:c.voci||[],note:[],documenti:[],presenze:[]};});}}catch(e){}
+  }
+  if(!Object.keys(cantieri).length)nuovoCantiere('Cantiere 1',false);
+  else{cantiereAttivo=Object.keys(cantieri)[0];caricaCantiere(cantiereAttivo);}
+  renderTabs();renderAll();
+}
+function caricaCantiere(id){cantiereAttivo=id;voci=cantieri[id].voci||[];note=cantieri[id].note||[];documenti=cantieri[id].documenti||[];presenze=cantieri[id].presenze||[];}
+function nuovoCantiere(nome,chiedi=true){
+  if(chiedi){nome=prompt('Nome cantiere:','Cantiere '+(Object.keys(cantieri).length+1));if(!nome)return;}
+  const id='c_'+Date.now();
+  cantieri[id]={nome:nome.trim(),voci:[],note:[],documenti:[],presenze:[]};
+  if(cantiereAttivo)salvaCorrente();caricaCantiere(id);salva();renderTabs();renderAll();
+  showToast('🏗 "'+nome+'" creato!');
+}
+function switchCantiere(id){salvaCorrente();caricaCantiere(id);salva();renderTabs();renderAll();}
+function eliminaCantiere(){
+  if(Object.keys(cantieri).length<=1){showToast('⚠️ Almeno un cantiere!');return;}
+  if(!confirm('Eliminare "'+cantieri[cantiereAttivo].nome+'"?'))return;
+  delete cantieri[cantiereAttivo];caricaCantiere(Object.keys(cantieri)[0]);salva();renderTabs();renderAll();
+  showToast('🗑 Cantiere eliminato');
+}
+function salvaCorrente(){
+  if(!cantiereAttivo)return;
+  cantieri[cantiereAttivo].voci=[...voci];cantieri[cantiereAttivo].note=[...note];
+  cantieri[cantiereAttivo].documenti=[...documenti];cantieri[cantiereAttivo].presenze=[...presenze];
+}
+function renderTabs(){
+  document.getElementById('cantiereTabs').innerHTML=Object.entries(cantieri).map(([id,c])=>`<button class="cantiere-tab ${id===cantiereAttivo?'active':''}" onclick="switchCantiere('${id}')">${c.nome}</button>`).join('')+`<button class="cantiere-add" onclick="nuovoCantiere()">+</button>`;
+  document.getElementById('cantiereLabel').textContent='📍 '+(cantiereAttivo&&cantieri[cantiereAttivo]?cantieri[cantiereAttivo].nome:'');
+}
+function renderAll(){renderVoci();renderNote();renderDocumenti();renderPresenze();}
+function switchSection(nome){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+nome).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const nb=document.getElementById('nav-'+nome);if(nb)nb.classList.add('active');
+}
+
+// ── MISURE ───────────────────────────────────────
+function toggleVoceDesc(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){showToast('⚠️ Usa Chrome');return;}
+  const btn=document.getElementById('micBtnDesc'),lbl=document.getElementById('micLabelDesc');
+  if(recognitionDesc){recognitionDesc.stop();recognitionDesc=null;btn.classList.remove('active');lbl.textContent='🎤 Di\' la descrizione con la voce';return;}
+  recognitionDesc=new SR();recognitionDesc.lang='it-IT';recognitionDesc.continuous=false;recognitionDesc.interimResults=true;
+  recognitionDesc.onstart=()=>{btn.classList.add('active');lbl.textContent='⏹ In ascolto...';};
+  recognitionDesc.onresult=e=>{const t=Array.from(e.results).map(r=>r[0].transcript).join('');document.getElementById('fDesc').value=t;};
+  recognitionDesc.onend=()=>{recognitionDesc=null;btn.classList.remove('active');lbl.textContent='🎤 Di\' la descrizione con la voce';};
+  recognitionDesc.onerror=()=>{recognitionDesc=null;btn.classList.remove('active');lbl.textContent='🎤 Di\' la descrizione con la voce';};
+  recognitionDesc.start();
+}
+function toggleVoce(){isListening?stopVoce():startVoce();}
+function startVoce(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){showToast('⚠️ Usa Chrome');return;}
+  recognition=new SR();recognition.lang='it-IT';recognition.continuous=false;recognition.interimResults=true;
+  recognition.onstart=()=>{isListening=true;document.getElementById('micBtn').classList.add('active');document.getElementById('micLabel').textContent='⏹ Tocca per fermare';document.getElementById('voiceFeedback').classList.add('show');document.getElementById('voiceFeedback').textContent='🎤 Dì: "lunghezza 5 virgola 50, larghezza 3"';};
+  recognition.onresult=e=>{const t=Array.from(e.results).map(r=>r[0].transcript).join(' ').toLowerCase();document.getElementById('voiceFeedback').textContent='📝 "'+t+'"';if(e.results[0].isFinal)parsaMisure(t);};
+  recognition.onerror=()=>stopVoce();recognition.onend=()=>{if(isListening)stopVoce();};recognition.start();
+}
+function stopVoce(){isListening=false;if(recognition)recognition.stop();document.getElementById('micBtn').classList.remove('active');document.getElementById('micLabel').textContent='📏 Di\' le misure con la voce';setTimeout(()=>document.getElementById('voiceFeedback').classList.remove('show'),3000);}
+function parsaMisure(t){
+  t=t.replace(/virgola/g,'.').replace(/,/g,'.').replace(/zero/g,'0').replace(/uno/g,'1').replace(/due/g,'2').replace(/tre/g,'3').replace(/quattro/g,'4').replace(/cinque/g,'5').replace(/sei/g,'6').replace(/sette/g,'7').replace(/otto/g,'8').replace(/nove/g,'9').replace(/dieci/g,'10');
+  let trovato={};
+  [['lunghezza|lung','fL'],['larghezza|larg','fLa'],['altezza|alt|profondità|prof','fA'],['ripetizioni|volte','fRip']].forEach(([k,f])=>{const m=t.match(new RegExp('(?:'+k+')\\s*([\\d]+(?:\\.\\d+)?)','i'));if(m)trovato[f]=parseFloat(m[1]);});
+  if(!Object.keys(trovato).length){const n=t.match(/\d+(?:\.\d+)?/g);if(n)['fL','fLa','fA'].forEach((f,i)=>{if(n[i])trovato[f]=parseFloat(n[i]);});}
+  if(!Object.keys(trovato).length){document.getElementById('voiceFeedback').textContent='⚠️ Non capito. Riprova.';return;}
+  Object.entries(trovato).forEach(([id,val])=>document.getElementById(id).value=val);
+  calcola();showToast('🎤 Misure inserite!');
+}
+function calcola(){
+  const l=parseFloat(document.getElementById('fL').value)||0,la=parseFloat(document.getElementById('fLa').value)||0,a=parseFloat(document.getElementById('fA').value)||0,r=parseFloat(document.getElementById('fRip').value)||1,um=document.getElementById('fUm').value,p=parseFloat(document.getElementById('fPrezzo').value)||0;
+  let q=0;if(um==='m²')q=l*(la||a||1)*r;else if(um==='m³')q=l*la*a*r;else if(um==='m')q=l*r;else q=r;
+  const imp=q*p;
+  document.getElementById('calcBox').textContent=q>0?`📏 ${q.toFixed(2)} ${um}`+(imp>0?` → € ${imp.toFixed(2)}`:''):'📏 Quantità: —';
+  return{q,imp};
+}
+function aggiungiPhoto(event){Array.from(event.target.files).forEach(file=>{const reader=new FileReader();reader.onload=e=>{fotoTemp.push(e.target.result);const img=document.createElement('img');img.src=e.target.result;img.className='foto-thumb';img.onclick=()=>openLightbox(e.target.result);document.getElementById('fotoPreview').insertBefore(img,document.getElementById('fotoPreview').querySelector('.foto-add'));};reader.readAsDataURL(file);});event.target.value='';}
+function aggiungiVoce(){
+  const desc=document.getElementById('fDesc').value.trim();if(!desc){showToast('⚠️ Inserisci descrizione!');return;}
+  const{q,imp}=calcola();
+  voci.push({id:Date.now(),desc,um:document.getElementById('fUm').value,l:parseFloat(document.getElementById('fL').value)||0,la:parseFloat(document.getElementById('fLa').value)||0,a:parseFloat(document.getElementById('fA').value)||0,r:parseFloat(document.getElementById('fRip').value)||1,q,prezzo:parseFloat(document.getElementById('fPrezzo').value)||0,importo:imp,note:document.getElementById('fNote').value.trim(),foto:[...fotoTemp],data:new Date().toLocaleDateString('it-IT')});
+  ['fDesc','fL','fLa','fA','fNote','fPrezzo'].forEach(id=>document.getElementById(id).value='');document.getElementById('fRip').value='1';document.getElementById('calcBox').textContent='📏 Quantità: —';document.getElementById('fotoPreview').innerHTML='<button class="foto-add" onclick="document.getElementById(\'fotoInput\').click()">+</button>';fotoTemp=[];
+  salva();renderVoci();showToast('✓ Voce aggiunta!');
+}
+function renderVoci(){
+  document.getElementById('voceCount').textContent=voci.length;
+  const totale=voci.reduce((s,v)=>s+v.importo,0);
+  document.getElementById('totaleBadge').textContent='€ '+totale.toLocaleString('it-IT',{minimumFractionDigits:2});
+  const list=document.getElementById('vociList');
+  if(!voci.length){list.innerHTML='<div class="empty-state">Nessuna voce.</div>';return;}
+  list.innerHTML=voci.map((v,i)=>`<div class="voce-card"><div class="voce-top"><span class="voce-num">#${i+1}</span><span class="voce-desc">${esc(v.desc)}</span><button class="voce-del" onclick="eliminaVoce(${v.id})">🗑</button></div><div class="voce-misure">${v.l?`<span class="chip">L:${v.l}m</span>`:''}${v.la?`<span class="chip">La:${v.la}m</span>`:''}${v.a?`<span class="chip">A:${v.a}m</span>`:''}${v.r>1?`<span class="chip">x${v.r}</span>`:''}<span class="chip">${v.q.toFixed(2)} ${v.um}</span>${v.prezzo>0?`<span class="chip">€${v.prezzo.toFixed(2)}/um</span>`:''}${v.importo>0?`<span class="importo">= € ${v.importo.toFixed(2)}</span>`:''}</div>${v.note?`<div class="voce-note">${esc(v.note)}</div>`:''}${v.foto&&v.foto.length?`<div class="voce-foto">${v.foto.map(f=>`<img src="${f}" onclick="openLightbox('${f}')">`).join('')}</div>`:''}<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">${v.data}</div></div>`).join('');
+}
+function eliminaVoce(id){if(confirm('Eliminare?')){voci=voci.filter(v=>v.id!==id);salva();renderVoci();}}
+
+// ── NOTE ─────────────────────────────────────────
+function toggleVoceNota(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){showToast('⚠️ Usa Chrome');return;}
+  const btn=document.getElementById('micBtnNote'),lbl=document.getElementById('micLabelNote');
+  if(recognitionNota){recognitionNota.stop();recognitionNota=null;btn.classList.remove('active');lbl.textContent='🎤 Dettatura vocale';return;}
+  recognitionNota=new SR();recognitionNota.lang='it-IT';recognitionNota.continuous=true;recognitionNota.interimResults=true;let tf='';
+  recognitionNota.onstart=()=>{btn.classList.add('active');lbl.textContent='⏹ In ascolto...';tf='';};
+  recognitionNota.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal){tf+=e.results[i][0].transcript+' ';document.getElementById('nTesto').value=tf.trim();}else{document.getElementById('nTesto').value=(tf+e.results[i][0].transcript).trim();}}};
+  recognitionNota.onend=()=>{recognitionNota=null;btn.classList.remove('active');lbl.textContent='🎤 Dettatura vocale';};
+  recognitionNota.onerror=()=>{recognitionNota=null;btn.classList.remove('active');lbl.textContent='🎤 Dettatura vocale';};
+  recognitionNota.start();
+}
+function aggiungiNota(){
+  const titolo=document.getElementById('nTitolo').value.trim(),testo=document.getElementById('nTesto').value.trim();
+  if(!titolo&&!testo){showToast('⚠️ Inserisci testo!');return;}
+  note.unshift({id:Date.now(),titolo:titolo||'Nota',testo,data:new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})});
+  document.getElementById('nTitolo').value='';document.getElementById('nTesto').value='';
+  salva();renderNote();showToast('📝 Nota salvata!');
+}
+function renderNote(){
+  document.getElementById('noteCount').textContent=note.length;
+  const list=document.getElementById('noteList');
+  if(!note.length){list.innerHTML='<div class="empty-state">Nessuna nota ancora.</div>';return;}
+  list.innerHTML=note.map(n=>`<div class="note-card"><div class="note-card-top"><div><div class="note-card-titolo">${esc(n.titolo)}</div><div class="note-card-data">${n.data}</div></div><button class="voce-del" onclick="eliminaNota(${n.id})">🗑</button></div>${n.testo?`<div class="note-card-testo">${esc(n.testo)}</div>`:''}</div>`).join('');
+}
+function eliminaNota(id){if(confirm('Eliminare?')){note=note.filter(n=>n.id!==id);salva();renderNote();}}
+
+// ── DOCUMENTI (Drive links) ───────────────────────
+function apriDrive(){window.open('https://drive.google.com','_blank');}
+async function incollaLink(){
+  try{const t=await navigator.clipboard.readText();document.getElementById('dLink').value=t;showToast('📋 Link incollato!');}
+  catch(e){showToast('⚠️ Incolla manualmente');}
+}
+function aggiungiDocumento(){
+  const nome=document.getElementById('dNome').value.trim();
+  if(!nome){showToast('⚠️ Inserisci nome!');return;}
+  const link=document.getElementById('dLink').value.trim();
+  if(!link){showToast('⚠️ Incolla il link Drive!');return;}
+  documenti.unshift({id:Date.now(),nome,tipo:document.getElementById('dTipo').value,link,note:document.getElementById('dNote').value.trim(),data:new Date().toLocaleDateString('it-IT')});
+  document.getElementById('dNome').value='';document.getElementById('dLink').value='';document.getElementById('dNote').value='';
+  salva();renderDocumenti();showToast('📁 Documento salvato!');
+}
+function renderDocumenti(){
+  document.getElementById('docCount').textContent=documenti.length;
+  const list=document.getElementById('docList');
+  if(!documenti.length){list.innerHTML='<div class="empty-state">Nessun documento ancora.<br>Carica su Drive e registra il link 👆</div>';return;}
+  const icone={POS:'📋',DURC:'🏛️','DURC Congruità':'🏛️',PSC:'⛑️',Contratto:'📜',DDT:'🚛',Fattura:'🧾',Permesso:'✅',Planimetria:'📐',Collaudo:'🔍','Foto cantiere':'📷',Altro:'📄'};
+  list.innerHTML=documenti.map(d=>`
+    <div class="doc-card">
+      <div class="doc-card-top">
+        <div class="doc-icon">${icone[d.tipo]||'📄'}</div>
+        <div class="doc-info">
+          <div class="doc-nome">${esc(d.nome)}</div>
+          <span class="doc-tipo-badge">${esc(d.tipo)}</span>
+          ${d.note?`<div class="doc-meta">${esc(d.note)}</div>`:''}
+          <div class="doc-meta">${d.data}</div>
+        </div>
+        <button class="voce-del" onclick="eliminaDoc(${d.id})">🗑</button>
+      </div>
+      <div class="doc-actions">
+        <button class="doc-btn primary" onclick="window.open('${esc(d.link)}','_blank')">🔗 Apri su Drive</button>
+        <button class="doc-btn" onclick="copiaLink('${esc(d.link)}')">📋 Copia link</button>
+      </div>
+    </div>`).join('');
+}
+function copiaLink(link){navigator.clipboard.writeText(link).then(()=>showToast('📋 Link copiato!')).catch(()=>showToast('⚠️ Copia manualmente'));}
+function eliminaDoc(id){if(confirm('Eliminare documento?')){documenti=documenti.filter(d=>d.id!==id);salva();renderDocumenti();}}
+
+// ── PRESENZE ─────────────────────────────────────
+let eccezioniTemp=[];
+
+function aggiornaTotaleForm(){
+  const n=parseFloat(document.getElementById('pNOperai').value)||0;
+  const o=parseFloat(document.getElementById('pOreStd').value)||0;
+  document.getElementById('pTotaleOre').textContent=(n*o)+'h';
+}
+function aggiungiEccezione(){
+  const nome=document.getElementById('eccNome').value.trim();
+  const ore=parseFloat(document.getElementById('eccOre').value);
+  if(!nome){showToast('⚠️ Inserisci nome!');return;}
+  if(!ore){showToast('⚠️ Inserisci ore!');return;}
+  eccezioniTemp.push({id:Date.now(),nome,ore});
+  document.getElementById('eccNome').value='';document.getElementById('eccOre').value='';
+  renderEccezioniTemp();
+}
+function renderEccezioniTemp(){
+  const list=document.getElementById('eccezioniList');
+  if(!eccezioniTemp.length){list.innerHTML='';return;}
+  list.innerHTML=eccezioniTemp.map(e=>`<div class="op-temp-row"><div class="op-temp-info"><div class="op-temp-nome">👷 ${esc(e.nome)}</div><div class="op-temp-det">${e.ore}h</div></div><button class="op-temp-del" onclick="rimuoviEccezione(${e.id})">✕</button></div>`).join('');
+}
+function rimuoviEccezione(id){eccezioniTemp=eccezioniTemp.filter(e=>e.id!==id);renderEccezioniTemp();}
+
+function salvaGiornata(){
+  const dataVal=document.getElementById('pData').value;
+  const nOperai=parseInt(document.getElementById('pNOperai').value)||1;
+  const oreStd=parseFloat(document.getElementById('pOreStd').value)||8;
+  const noteVal=document.getElementById('pNote').value.trim();
+  const dataLabel=dataVal?new Date(dataVal+'T12:00:00').toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}):new Date().toLocaleDateString('it-IT');
+  const esistente=presenze.find(g=>g.dataISO===dataVal);
+  if(esistente){
+    esistente.nOperai=nOperai;esistente.oreStd=oreStd;
+    esistente.eccezioni=[...eccezioniTemp];
+    if(noteVal)esistente.noteLibere=(esistente.noteLibere?esistente.noteLibere+'\n':'')+noteVal;
+  } else {
+    presenze.unshift({id:Date.now(),dataISO:dataVal,dataLabel,nOperai,oreStd,eccezioni:[...eccezioniTemp],noteLibere:noteVal});
+  }
+  eccezioniTemp=[];
+  document.getElementById('eccNome').value='';document.getElementById('eccOre').value='';
+  document.getElementById('pNote').value='';
+  renderEccezioniTemp();salva();renderPresenze();
+  showToast('✅ Giornata salvata!');switchSection('pres');
+}
+
+function renderPresenze(){
+  const tot=presenze.length;
+  document.getElementById('presCount').textContent=tot+' giorn'+(tot===1?'o':'i');
+  const list=document.getElementById('presList');
+  if(!presenze.length){list.innerHTML='<div class="empty-state">Nessuna presenza registrata ancora.</div>';return;}
+  list.innerHTML=presenze.map(g=>{
+    const nOp=g.nOperai||1;
+    const oreS=g.oreStd||8;
+    const totOre=nOp*oreS;
+    const ecc=g.eccezioni||[];
+    const eccRows=ecc.map(e=>`<div class="op-row"><div class="op-avatar">👷</div><div class="op-info"><div class="op-nome">${esc(e.nome)}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><div class="op-ore">${e.ore}h</div><button class="edit-op-btn danger" onclick="eliminaEccezione(${g.id},${e.id})">🗑</button></div></div>`).join('');
+    return `<div class="giornata-card">
+      <div class="giornata-header">
+        <div style="cursor:pointer;flex:1;" onclick="toggleGiornata(${g.id})">
+          <div class="giornata-data">${g.dataLabel}</div>
+          <div class="giornata-meta">${nOp} operai × ${oreS}h = ${totOre}h${ecc.length?' + '+ecc.length+' eccezioni':''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="giornata-badge">${nOp} 👷</span>
+          <button class="icon-btn" onclick="toggleGiornata(${g.id})">👁</button>
+          <button class="icon-btn" onclick="modificaGiornata(${g.id})">✏️</button>
+          <button class="icon-btn" style="color:var(--danger)" onclick="eliminaGiornata(${g.id})">🗑</button>
+        </div>
+      </div>
+      <div class="giornata-body" id="gb-${g.id}" style="display:none;">
+        <div style="background:rgba(232,160,32,0.08);border:1px solid var(--accent);border-radius:10px;padding:12px;margin:10px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Operai</span>
+            <input type="number" id="gop-${g.id}" value="${nOp}" min="1"
+              style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:22px;font-weight:800;text-align:center;padding:6px 2px;outline:none;font-family:'Barlow Condensed',sans-serif;"
+              oninput="aggiornaCalcGiornata(${g.id})">
+          </div>
+          <div style="font-size:22px;color:var(--text-muted);padding-top:16px;">×</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Ore</span>
+            <input type="number" id="gore-${g.id}" value="${oreS}" min="0.5" max="24" step="0.5"
+              style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:22px;font-weight:800;text-align:center;padding:6px 2px;outline:none;font-family:'Barlow Condensed',sans-serif;"
+              oninput="aggiornaCalcGiornata(${g.id})">
+          </div>
+          <div style="font-size:22px;color:var(--text-muted);padding-top:16px;">=</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+            <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Totale</span>
+            <div id="gtot-${g.id}" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:24px;color:var(--accent2);padding-top:6px;">${totOre}h</div>
+          </div>
+          <button onclick="salvaCalcGiornata(${g.id})" style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:9px 14px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;cursor:pointer;margin-top:16px;">✓ Salva</button>
+        </div>
+        ${ecc.length?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);margin-bottom:4px;margin-top:8px;">Ore diverse</div>${eccRows}`:''}
+        <div style="display:flex;gap:6px;margin-top:10px;align-items:flex-end;">
+          <div style="flex:1;"><input type="text" id="gnome-${g.id}" placeholder="Nome operaio" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;padding:8px 10px;outline:none;font-family:'Barlow',sans-serif;"></div>
+          <div style="width:65px;"><input type="number" id="gore2-${g.id}" placeholder="Ore" step="0.5" min="0.5" max="24" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;padding:8px 6px;outline:none;font-family:'Barlow',sans-serif;text-align:center;"></div>
+          <button onclick="aggiungiEccezioneGiornata(${g.id})" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-soft);font-size:13px;padding:8px 10px;cursor:pointer;font-weight:600;white-space:nowrap;">+ Riga</button>
+        </div>
+        <div style="margin-top:12px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);margin-bottom:6px;">📝 Note</div>
+          <textarea id="gnote-${g.id}" rows="3"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:10px 12px;outline:none;font-family:'Barlow',sans-serif;resize:vertical;line-height:1.5;"
+            placeholder="Nomi, attività, meteo, materiali...">${esc(g.noteLibere||'')}</textarea>
+          <button onclick="salvaNoteLiberGiornata(${g.id})" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-soft);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;padding:10px;cursor:pointer;margin-top:6px;">✓ Salva Note</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleGiornata(id){const el=document.getElementById('gb-'+id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+function eliminaGiornata(id){if(confirm('Eliminare giornata?')){presenze=presenze.filter(g=>g.id!==id);salva();renderPresenze();}}
+function aggiornaCalcGiornata(gid){
+  const op=parseFloat(document.getElementById('gop-'+gid).value)||0;
+  const ore=parseFloat(document.getElementById('gore-'+gid).value)||0;
+  document.getElementById('gtot-'+gid).textContent=(op*ore)+'h';
+}
+function salvaCalcGiornata(gid){
+  const g=presenze.find(x=>x.id===gid);if(!g)return;
+  g.nOperai=parseFloat(document.getElementById('gop-'+gid).value)||1;
+  g.oreStd=parseFloat(document.getElementById('gore-'+gid).value)||8;
+  salva();renderPresenze();
+  setTimeout(()=>{const el=document.getElementById('gb-'+gid);if(el)el.style.display='block';},100);
+  showToast('✓ Calcolo salvato!');
+}
+function aggiungiEccezioneGiornata(gid){
+  const g=presenze.find(x=>x.id===gid);if(!g)return;
+  const nome=document.getElementById('gnome-'+gid).value.trim();
+  const ore=parseFloat(document.getElementById('gore2-'+gid).value);
+  if(!nome||!ore){showToast('⚠️ Inserisci nome e ore!');return;}
+  if(!g.eccezioni)g.eccezioni=[];
+  g.eccezioni.push({id:Date.now(),nome,ore});
+  salva();renderPresenze();
+  setTimeout(()=>{const el=document.getElementById('gb-'+gid);if(el)el.style.display='block';},100);
+  showToast('✓ Aggiunto!');
+}
+function eliminaEccezione(gid,eid){
+  const g=presenze.find(x=>x.id===gid);if(!g)return;
+  g.eccezioni=g.eccezioni.filter(e=>e.id!==eid);
+  salva();renderPresenze();
+  setTimeout(()=>{const el=document.getElementById('gb-'+gid);if(el)el.style.display='block';},100);
+}
+function salvaNoteLiberGiornata(gid){
+  const g=presenze.find(x=>x.id===gid);if(!g)return;
+  g.noteLibere=document.getElementById('gnote-'+gid).value.trim();
+  salva();showToast('✓ Note salvate!');
+}
+function modificaGiornata(gid){
+  const g=presenze.find(x=>x.id===gid);if(!g)return;
+  document.getElementById('pData').value=g.dataISO;
+  document.getElementById('pNOperai').value=g.nOperai||1;
+  document.getElementById('pOreStd').value=g.oreStd||8;
+  aggiornaTotaleForm();
+  switchSection('pres');window.scrollTo({top:0,behavior:'smooth'});
+  showToast('✏️ Modifica e salva');
+}
+function toggleVocePres(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){showToast('⚠️ Usa Chrome');return;}
+  const btn=document.getElementById('micBtnPres'),lbl=document.getElementById('micLabelPres');
+  if(recognitionPres){recognitionPres.stop();recognitionPres=null;btn.classList.remove('active');lbl.textContent='🎤 Di\' l\'attività con la voce';return;}
+  recognitionPres=new SR();recognitionPres.lang='it-IT';recognitionPres.continuous=false;recognitionPres.interimResults=true;
+  recognitionPres.onstart=()=>{btn.classList.add('active');lbl.textContent='⏹ In ascolto...';};
+  recognitionPres.onresult=e=>{const t=Array.from(e.results).map(r=>r[0].transcript).join('');document.getElementById('opAttivita').value=t;};
+  recognitionPres.onend=()=>{recognitionPres=null;btn.classList.remove('active');lbl.textContent='🎤 Di\' l\'attività con la voce';};
+  recognitionPres.onerror=()=>{recognitionPres=null;btn.classList.remove('active');lbl.textContent='🎤 Di\' l\'attività con la voce';};
+  recognitionPres.start();
+}
+function renderPresenze(){
+  const tot=presenze.length;
+  document.getElementById('presCount').textContent=tot+' giorn'+(tot===1?'o':'i');
+  const list=document.getElementById('presList');
+  if(!presenze.length){list.innerHTML='<div class="empty-state">Nessuna presenza registrata ancora.</div>';return;}
+  list.innerHTML=presenze.map(g=>{
+    const nOp=g.operai.length;
+    const cOp=g.calcOperai||nOp;
+    const cOre=g.calcOre||8;
+    const totCalc=cOp*cOre;
+    const righe=g.operai.map(o=>`<div class="op-row"><div class="op-avatar">👷</div><div class="op-info"><div class="op-nome">${esc(o.nome)}</div><span class="op-qualifica">${esc(o.qualifica)}</span>${o.attivita?`<div class="op-attivita">${esc(o.attivita)}</div>`:''}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;"><div class="op-ore">${o.ore}h</div><button class="edit-op-btn" onclick="apriEditOp(${g.id},${o.id})">✏️</button><button class="edit-op-btn danger" onclick="eliminaOperaio(${g.id},${o.id})">🗑</button></div></div>`).join('');
+    return `<div class="giornata-card">
+      <div class="giornata-header">
+        <div style="cursor:pointer;flex:1;" onclick="toggleGiornata(${g.id})">
+          <div class="giornata-data">${g.dataLabel}</div>
+          <div class="giornata-meta">${nOp} operai · ${totCalc}h totali</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="giornata-badge">${nOp} 👷</span>
+          <button class="icon-btn" onclick="toggleGiornata(${g.id})">👁</button>
+          <button class="icon-btn" onclick="aggiungiOpAGiornata(${g.id})">➕</button>
+          <button class="icon-btn" style="color:var(--danger)" onclick="eliminaGiornata(${g.id})">🗑</button>
+        </div>
+      </div>
+      <div class="giornata-body" id="gb-${g.id}" style="display:none;">
+
+        <!-- CALCOLO RAPIDO -->
+        <div style="background:rgba(232,160,32,0.08);border:1px solid var(--accent);border-radius:10px;padding:12px;margin:10px 0;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--accent);margin-bottom:10px;">⚡ Calcolo Rapido</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Operai</span>
+              <input type="number" id="cop-${g.id}" value="${cOp}" min="1" max="99"
+                style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:20px;font-weight:800;text-align:center;padding:6px 4px;outline:none;font-family:'Barlow Condensed',sans-serif;"
+                oninput="aggiornaCalcolo(${g.id})">
+            </div>
+            <div style="font-size:24px;color:var(--text-muted);font-weight:300;margin-top:14px;">×</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Ore</span>
+              <input type="number" id="core-${g.id}" value="${cOre}" min="0.5" max="24" step="0.5"
+                style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:20px;font-weight:800;text-align:center;padding:6px 4px;outline:none;font-family:'Barlow Condensed',sans-serif;"
+                oninput="aggiornaCalcolo(${g.id})">
+            </div>
+            <div style="font-size:24px;color:var(--text-muted);font-weight:300;margin-top:14px;">=</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Totale ore</span>
+              <div id="ctot-${g.id}" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:24px;color:var(--accent2);min-width:60px;text-align:center;padding-top:8px;">${totCalc}h</div>
+            </div>
+            <button onclick="salvaCalcolo(${g.id})" style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:10px 14px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;cursor:pointer;margin-top:14px;">✓ Salva</button>
+          </div>
+        </div>
+
+        <!-- OPERAI NOMINATIVI -->
+        ${righe}
+
+        <!-- NOTE LIBERE -->
+        <div style="margin-top:10px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);margin-bottom:6px;">📝 Note (nomi, attività, osservazioni...)</div>
+          <textarea id="notelibere-${g.id}" rows="3"
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:10px 12px;outline:none;font-family:'Barlow',sans-serif;resize:vertical;line-height:1.5;"
+            placeholder="Es: Mario Rossi - casseforme, Luigi Bianchi - armatura pilastri, tempo sereno...">${esc(g.noteLibere||'')}</textarea>
+          <button onclick="salvaNoteLiberGiornata(${g.id})" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-soft);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;padding:10px;cursor:pointer;margin-top:6px;">✓ Salva Note</button>
+        </div>
+
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleGiornata(id){const el=document.getElementById('gb-'+id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+function eliminaGiornata(id){if(confirm('Eliminare giornata?')){presenze=presenze.filter(g=>g.id!==id);salva();renderPresenze();}}
+function aggiornaCalcolo(gid){
+  const op=parseFloat(document.getElementById('cop-'+gid).value)||0;
+  const ore=parseFloat(document.getElementById('core-'+gid).value)||0;
+  document.getElementById('ctot-'+gid).textContent=(op*ore)+'h';
+}
+function salvaCalcolo(gid){
+  const g=presenze.find(x=>x.id===gid);if(!g)return;
+  g.calcOperai=parseFloat(document.getElementById('cop-'+gid).value)||0;
+  g.calcOre=parseFloat(document.getElementById('core-'+gid).value)||0;
+  salva();showToast('✓ Calcolo salvato!');
+}
+function salvaNoteLiberGiornata(gid){
+  const g=presenze.find(x=>x.id===gid);if(!g)return;
+  g.noteLibere=document.getElementById('notelibere-'+gid).value.trim();
+  salva();showToast('✓ Note salvate!');
+}
+function eliminaOperaio(gid,oid){
+  const g=presenze.find(x=>x.id===gid);if(!g)return;
+  if(g.operai.length<=1){if(!confirm('Ultima persona — eliminare tutta la giornata?'))return;presenze=presenze.filter(x=>x.id!==gid);}
+  else{if(!confirm('Eliminare operaio?'))return;g.operai=g.operai.filter(o=>o.id!==oid);}
+  salva();renderPresenze();
+}
+function aggiungiOpAGiornata(gid){const g=presenze.find(x=>x.id===gid);if(!g)return;document.getElementById('pData').value=g.dataISO;switchSection('pres');window.scrollTo({top:0,behavior:'smooth'});showToast('👆 Aggiungi operaio e salva');}
+function apriEditOp(gid,oid){
+  const g=presenze.find(x=>x.id===gid);if(!g)return;const o=g.operai.find(x=>x.id===oid);if(!o)return;
+  document.getElementById('editOpGId').value=gid;document.getElementById('editOpId').value=oid;
+  document.getElementById('editOpNome').value=o.nome;document.getElementById('editOpQual').value=o.qualifica;
+  document.getElementById('editOpAtt').value=o.attivita||'';document.getElementById('editOpOre').value=o.ore;
+  document.getElementById('editOpModal').classList.add('open');
+}
+function chiudiEditOp(){document.getElementById('editOpModal').classList.remove('open');}
+function salvaEditOp(){
+  const gid=parseInt(document.getElementById('editOpGId').value),oid=parseInt(document.getElementById('editOpId').value);
+  const g=presenze.find(x=>x.id===gid);if(!g)return;const o=g.operai.find(x=>x.id===oid);if(!o)return;
+  o.nome=document.getElementById('editOpNome').value.trim()||o.nome;o.qualifica=document.getElementById('editOpQual').value;
+  o.attivita=document.getElementById('editOpAtt').value.trim();o.ore=parseFloat(document.getElementById('editOpOre').value)||o.ore;
+  chiudiEditOp();salva();renderPresenze();
+  setTimeout(()=>{const el=document.getElementById('gb-'+gid);if(el)el.style.display='block';},100);
+  showToast('✓ Operaio aggiornato!');
+}
+
+// ── GMAIL ─────────────────────────────────────────
+function apriModalGmail(){document.getElementById('gmailModal').classList.add('open');}
+function chiudiModal(){document.getElementById('gmailModal').classList.remove('open');}
+function eseguiGmail(){
+  chiudiModal();
+  const nm=cantieri[cantiereAttivo]?.nome||'Cantiere';
+  const data=new Date().toLocaleDateString('it-IT');
+  const totale=voci.reduce((s,v)=>s+v.importo,0);
+  let body=`RIEPILOGO CANTIERE: ${nm}\nData: ${data}\n${'='.repeat(50)}\n\n`;
+  body+=`📐 MISURE (${voci.length} voci) — Totale: € ${totale.toLocaleString('it-IT',{minimumFractionDigits:2})}\n\n`;
+  voci.forEach((v,i)=>{body+=`${i+1}. ${v.desc}\n   ${v.q.toFixed(2)} ${v.um}`;if(v.l)body+=` | L:${v.l}m`;if(v.la)body+=` La:${v.la}m`;if(v.a)body+=` A:${v.a}m`;if(v.importo>0)body+=` = € ${v.importo.toFixed(2)}`;body+='\n';if(v.note)body+=`   Note: ${v.note}\n`;body+='\n';});
+  body+=`${'─'.repeat(50)}\n📝 NOTE (${note.length})\n\n`;
+  note.forEach(n=>{body+=`[${n.data}] ${n.titolo}\n${n.testo||''}\n\n`;});
+  body+=`${'─'.repeat(50)}\n📁 DOCUMENTI (${documenti.length})\n\n`;
+  documenti.forEach(d=>{body+=`• [${d.tipo}] ${d.nome}${d.note?' — '+d.note:''}\n  🔗 ${d.link}\n\n`;});
+  body+=`${'─'.repeat(50)}\n👷 PRESENZE (${presenze.length} giornate)\n\n`;
+  presenze.forEach(g=>{
+    const nOp=g.nOperai||1;const oreS=g.oreStd||8;
+    body+=`📅 ${g.dataLabel} — ${nOp} operai × ${oreS}h = ${nOp*oreS}h\n`;
+    if(g.eccezioni&&g.eccezioni.length)g.eccezioni.forEach(e=>{body+=`   • ${e.nome} — ${e.ore}h\n`;});
+    if(g.noteLibere)body+=`   Note: ${g.noteLibere}\n`;body+='\n';
+  });
+  body+=`${'='.repeat(50)}\nInviato da Contabilità Cantiere`;
+  const sub=encodeURIComponent(`Cantiere: ${nm} — Riepilogo ${data}`);
+  window.open(`https://mail.google.com/mail/?view=cm&su=${sub}&body=${encodeURIComponent(body)}`,'_blank');
+  showToast('📧 Gmail aperto!');
+}
+
+// ── EXPORT ───────────────────────────────────────
+function exportExcel(){
+  if(!voci.length){showToast('⚠️ Nessuna voce!');return;}
+  const nm=cantieri[cantiereAttivo]?.nome||'cantiere';
+  let csv='\uFEFFN°;Descrizione;UM;L;La;A;Rip;Qtà;P.Unit;Importo;Note;Data\n';
+  voci.forEach((v,i)=>{csv+=`${i+1};"${v.desc}";${v.um};${v.l||''};${v.la||''};${v.a||''};${v.r};${v.q.toFixed(2)};${v.prezzo.toFixed(2)};${v.importo.toFixed(2)};"${v.note||''}";${v.data}\n`;});
+  csv+=`;;;;;;;TOTALE;;${voci.reduce((s,v)=>s+v.importo,0).toFixed(2)};;\n`;
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download=nm.replace(/[^a-z0-9]/gi,'_')+'_'+new Date().toISOString().slice(0,10)+'.csv';a.click();showToast('📊 Excel scaricato!');
+}
+function exportPDF(){
+  if(!voci.length){showToast('⚠️ Nessuna voce!');return;}
+  const totale=voci.reduce((s,v)=>s+v.importo,0),data=new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'long',year:'numeric'}),nm=cantieri[cantiereAttivo]?.nome||'Cantiere';
+  const righe=voci.map((v,i)=>`<tr><td>${i+1}</td><td>${v.desc}</td><td>${v.um}</td><td>${v.l||'-'}</td><td>${v.la||'-'}</td><td>${v.a||'-'}</td><td>${v.r}</td><td>${v.q.toFixed(2)}</td><td>${v.prezzo>0?'€'+v.prezzo.toFixed(2):'-'}</td><td style="color:#e8a020;font-weight:700;">${v.importo>0?'€'+v.importo.toFixed(2):'-'}</td><td>${v.note||''}</td></tr>`).join('');
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${nm}</title><style>body{font-family:Arial;font-size:12px;margin:20px;}h1{font-size:18px;}table{width:100%;border-collapse:collapse;}th{background:#1a1917;color:#e8a020;padding:6px;font-size:11px;text-align:left;}td{padding:5px 6px;border-bottom:1px solid #eee;}.tot td{background:#1a1917;color:#f5c842;font-weight:800;}@media print{body{margin:5px;}}</style></head><body><h1>📐 ${nm}</h1><p style="color:#888;font-size:11px;">${data}</p><table><thead><tr><th>#</th><th>Descrizione</th><th>UM</th><th>L</th><th>La</th><th>A</th><th>Rip</th><th>Qtà</th><th>P.Unit</th><th>Importo</th><th>Note</th></tr></thead><tbody>${righe}</tbody><tfoot><tr class="tot"><td colspan="9" style="text-align:right;">TOTALE</td><td>€ ${totale.toLocaleString('it-IT',{minimumFractionDigits:2})}</td><td></td></tr></tfoot></table><script>window.onload=()=>window.print();<\/script></body></html>`);
+  win.document.close();showToast('📄 PDF!');
+}
+function backupJSON(){
+  const nm=cantieri[cantiereAttivo]?.nome||'cantiere';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({cantiere:nm,data:new Date().toLocaleDateString('it-IT'),voci,note,documenti,presenze},null,2)],{type:'application/json'}));
+  a.download='backup_'+nm.replace(/[^a-z0-9]/gi,'_')+'_'+new Date().toISOString().slice(0,10)+'.json';a.click();showToast('💾 Backup!');
+}
+function ripristinaJSON(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.voci)voci=d.voci;if(d.note)note=d.note;if(d.documenti)documenti=d.documenti;if(d.presenze)presenze=d.presenze;salva();renderAll();showToast('✅ Ripristino completato!');}catch(e){showToast('❌ File non valido!');}};
+  reader.readAsText(file);event.target.value='';
+}
+
+function openLightbox(src){document.getElementById('lightboxImg').src=src;document.getElementById('lightbox').classList.add('open');}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// Avvio
+initCantieri();
+</script>
+</body>
+</html>
