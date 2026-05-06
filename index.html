@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>📐 Contabilità Cantiere</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f0f0e;--surface:#1a1917;--surface2:#242320;--border:#2e2c28;--accent:#e8a020;--accent2:#f5c842;--text:#f0ede8;--text-muted:#7a7670;--text-soft:#b0aba3;--green:#27ae60;--danger:#c0392b;--blue:#2980b9;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:72px;}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+.header-left{flex:1;}
+.header-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;color:var(--accent);}
+.header-sub{font-size:11px;color:var(--text-muted);}
+.header-right{display:flex;align-items:center;gap:8px;}
+.sync-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;white-space:nowrap;}
+.sync-ok{background:rgba(39,174,96,0.2);color:var(--green);border:1px solid var(--green);}
+.sync-wait{background:rgba(232,160,32,0.2);color:var(--accent);border:1px solid var(--accent);}
+.sync-err{background:rgba(192,57,43,0.2);color:var(--danger);border:1px solid var(--danger);}
+.cantiere-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:8px;overflow-x:auto;white-space:nowrap;}
+.cantiere-tab{background:var(--surface2);border:1px solid var(--border);border-radius:20px;color:var(--text-soft);font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;padding:6px 14px;cursor:pointer;flex-shrink:0;transition:all 0.15s;}
+.cantiere-tab.active{background:var(--accent);color:#000;border-color:var(--accent);}
+.cantiere-add{background:none;border:2px dashed var(--border);border-radius:20px;color:var(--text-muted);font-size:20px;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cantiere-info{font-size:12px;color:var(--text-muted);padding:6px 16px;display:flex;align-items:center;justify-content:space-between;}
+.cantiere-del{background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:20;}
+.nav-btn{flex:1;background:none;border:none;color:var(--text-muted);font-family:'Barlow',sans-serif;font-size:10px;font-weight:600;padding:9px 2px 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:color 0.15s;}
+.nav-btn .nav-icon{font-size:18px;}
+.nav-btn.active{color:var(--accent);}
+.section{display:none;}
+.section.active{display:block;}
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:12px;padding:16px;}
+.form-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--accent);text-transform:uppercase;margin-bottom:12px;}
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Barlow',sans-serif;font-size:15px;padding:10px 12px;outline:none;-webkit-appearance:none;}
+.field textarea{resize:vertical;min-height:80px;line-height:1.5;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.btn-primary{width:100%;background:var(--accent);color:#000;border:none;border-radius:10px;padding:14px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:17px;cursor:pointer;margin-top:8px;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:14px;}
+
+/* ══ MISURE NUOVE ══ */
+.nuova-voce-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:12px;padding:16px;}
+.um-row{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+.um-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;padding:8px 14px;cursor:pointer;transition:all .15s;}
+.um-btn.on{background:var(--accent);color:#000;border-color:var(--accent);}
+.righe-misure{margin:10px 0;}
+.riga-header{display:grid;grid-template-columns:1fr 70px 70px 70px 70px 32px;gap:4px;margin-bottom:4px;}
+.riga-header span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);text-align:center;}
+.riga-header span:first-child{text-align:left;}
+.riga-misura{display:grid;grid-template-columns:1fr 70px 70px 70px 70px 32px;gap:4px;margin-bottom:6px;align-items:center;}
+.riga-misura input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Barlow',sans-serif;font-size:14px;padding:8px 6px;outline:none;text-align:center;width:100%;}
+.riga-misura input:first-child{text-align:left;padding:8px 10px;}
+.riga-misura input:focus{border-color:var(--accent);}
+.riga-misura input.negativa{border-color:var(--danger);color:#e88080;}
+.riga-result{font-size:12px;font-weight:700;color:var(--accent2);text-align:center;background:var(--surface2);border-radius:6px;padding:8px 4px;}
+.riga-result.neg{color:var(--danger);}
+.riga-del{background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:4px;line-height:1;}
+.riga-del:hover{color:var(--danger);}
+.add-riga-btn{width:100%;background:none;border:2px dashed var(--border);border-radius:8px;color:var(--text-muted);font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;padding:10px;cursor:pointer;margin:6px 0;display:flex;align-items:center;justify-content:center;gap:6px;}
+.add-riga-btn:hover{border-color:var(--accent);color:var(--accent);}
+.totale-voce{background:linear-gradient(135deg,rgba(232,160,32,0.15),rgba(245,200,66,0.08));border:2px solid var(--accent);border-radius:10px;padding:14px 16px;margin:10px 0;display:flex;align-items:center;justify-content:space-between;}
+.totale-voce .label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);}
+.totale-voce .valore{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:26px;color:var(--accent2);}
+.totale-voce .um-label{font-size:14px;color:var(--accent);font-weight:700;margin-top:2px;}
+
+/* LISTA VOCI */
+.voci-section{margin:0 12px 12px;}
+.voci-header{display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;}
+.voci-header h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;}
+.export-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.export-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-soft);font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;padding:10px;cursor:pointer;text-align:center;}
+.export-btn.pdf-btn{border-color:var(--accent);color:var(--accent);}
+.voce-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;animation:fadeIn 0.2s ease;}
+.voce-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.voce-num{background:var(--accent);color:#000;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;padding:2px 8px;border-radius:4px;flex-shrink:0;margin-top:2px;}
+.voce-desc{flex:1;font-size:15px;font-weight:700;}
+.voce-del{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;}
+.voce-righe{margin-bottom:8px;}
+.voce-riga-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-soft);padding:4px 0;border-bottom:1px solid var(--border);}
+.voce-riga-row:last-child{border-bottom:none;}
+.voce-riga-desc{flex:1;color:var(--text-muted);font-style:italic;}
+.voce-riga-calc{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;}
+.voce-riga-calc.neg{color:var(--danger);}
+.voce-riga-calc.pos{color:var(--text-soft);}
+.voce-totale-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:2px solid var(--accent);}
+.voce-totale-label{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);}
+.voce-totale-val{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:20px;color:var(--accent2);}
+.voce-data{font-size:10px;color:var(--text-muted);margin-top:6px;}
+
+/* NOTE */
+.note-section{margin:12px;}
+.note-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;animation:fadeIn 0.2s ease;}
+.note-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;}
+.note-card-titolo{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:var(--accent);}
+.note-card-data{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.note-card-testo{font-size:14px;color:var(--text-soft);line-height:1.6;white-space:pre-wrap;border-top:1px solid var(--border);padding-top:8px;margin-top:6px;}
+.voce-del-small{background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;}
+
+/* DOC */
+.doc-section{margin:12px;}
+.doc-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;animation:fadeIn 0.2s ease;}
+.doc-card-top{display:flex;align-items:flex-start;gap:10px;}
+.doc-icon{font-size:28px;flex-shrink:0;margin-top:2px;}
+.doc-info{flex:1;min-width:0;}
+.doc-nome{font-size:14px;font-weight:600;}
+.doc-tipo-badge{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--accent);padding:1px 6px;margin-top:3px;}
+.doc-meta{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.doc-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.doc-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-soft);font-size:13px;padding:7px 12px;cursor:pointer;font-weight:600;}
+.doc-btn.primary{background:var(--blue);border-color:var(--blue);color:#fff;}
+.drive-banner{background:linear-gradient(135deg,#1a73e8,#0d47a1);border-radius:12px;margin:12px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer;}
+.drive-banner-icon{font-size:36px;flex-shrink:0;}
+.drive-banner-text .t1{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:18px;color:#fff;}
+.drive-banner-text .t2{font-size:12px;color:rgba(255,255,255,0.8);margin-top:2px;}
+
+/* PRESENZE */
+.pres-section{margin:12px;}
+.giornata-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;animation:fadeIn 0.2s ease;}
+.giornata-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;}
+.giornata-data{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:17px;color:var(--accent);}
+.giornata-meta{font-size:12px;color:var(--text-muted);margin-top:1px;}
+.giornata-badge{background:var(--accent);color:#000;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;padding:3px 10px;border-radius:12px;}
+.giornata-body{padding:0 14px 12px;border-top:1px solid var(--border);}
+.op-temp-row{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.op-temp-info{flex:1;font-size:13px;}
+.op-temp-nome{font-weight:700;}
+.op-temp-det{color:var(--text-muted);font-size:12px;margin-top:2px;}
+.op-temp-del{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;flex-shrink:0;}
+.section-header{padding:14px 16px 4px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:space-between;}
+.count-badge{background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--text-muted);padding:2px 8px;}
+.icon-btn{background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted);padding:4px;}
+.edit-op-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-soft);font-size:12px;padding:4px 8px;cursor:pointer;white-space:nowrap;}
+.edit-op-btn.danger{border-color:var(--danger);color:var(--danger);}
+.mic-btn{width:100%;background:var(--surface2);border:2px dashed var(--border);border-radius:8px;color:var(--text-muted);font-family:'Barlow',sans-serif;font-size:14px;padding:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0;}
+.mic-btn.active{background:rgba(192,57,43,0.15);border-color:var(--danger);color:var(--danger);animation:pulse 1s infinite;}
+
+/* PDF BANNER */
+.pdf-section-banner{margin:0 12px 4px;background:rgba(232,160,32,0.08);border:1px solid rgba(232,160,32,0.3);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.pdf-section-banner span{font-size:13px;color:var(--text-muted);}
+.pdf-section-btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:9px 16px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;cursor:pointer;white-space:nowrap;}
+
+/* TOAST & LIGHTBOX */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green);color:#fff;font-size:14px;font-weight:600;padding:12px 24px;border-radius:24px;opacity:0;transition:all 0.3s;pointer-events:none;z-index:300;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.link-input-wrap{display:flex;gap:6px;align-items:flex-end;}
+.link-input-wrap input{flex:1;}
+.link-input-wrap .paste-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-soft);font-size:13px;padding:10px 12px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-title">📐 Contabilità Cantiere</div>
+    <div class="header-sub" id="headerDate"></div>
+  </div>
+  <div class="header-right">
+    <span class="sync-badge sync-wait" id="syncBadge">⏳ Connessione...</span>
+  </div>
+</div>
+
+<div class="cantiere-bar" id="cantiereTabs"></div>
+<div class="cantiere-info">
+  <span id="cantiereLabel">📍</span>
+  <button class="cantiere-del" onclick="eliminaCantiere()">🗑 Elimina cantiere</button>
+</div>
+
+<!-- ══ MISURE ══ -->
+<div id="sec-misure" class="section active">
+
+  <!-- FORM NUOVA VOCE -->
+  <div class="nuova-voce-card">
+    <div class="form-title">📐 Nuova Voce di Misura</div>
+
+    <div class="field">
+      <label>Descrizione lavorazione</label>
+      <input type="text" id="fDesc" placeholder="Es: Intonaco civile parete nord...">
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label>Data misura</label>
+        <input type="date" id="fDataVoce">
+      </div>
+      <div class="field">
+        <label>Note (opzionale)</label>
+        <input type="text" id="fNoteVoce" placeholder="Riferimenti, ubicazione...">
+      </div>
+    </div>
+
+    <!-- SCELTA UM -->
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin-bottom:8px;">Unità di misura</div>
+      <div class="um-row" id="umRow">
+        <button class="um-btn on" onclick="setUM('m²',this)">m²</button>
+        <button class="um-btn" onclick="setUM('m³',this)">m³</button>
+        <button class="um-btn" onclick="setUM('m',this)">m</button>
+        <button class="um-btn" onclick="setUM('cad',this)">cad</button>
+        <button class="um-btn" onclick="setUM('kg',this)">kg</button>
+        <button class="um-btn" onclick="setUM('t',this)">t</button>
+        <button class="um-btn" onclick="setUM('ore',this)">ore</button>
+        <button class="um-btn" onclick="setUM('mc',this)">mc</button>
+      </div>
+    </div>
+
+    <!-- INTESTAZIONE COLONNE -->
+    <div class="riga-header" id="rigaHeader">
+      <span>Descrizione riga</span>
+      <span>L</span>
+      <span>La</span>
+      <span>H/P</span>
+      <span>= Qtà</span>
+      <span></span>
+    </div>
+
+    <!-- RIGHE MISURE -->
+    <div class="righe-misure" id="righeMisure"></div>
+
+    <button class="add-riga-btn" onclick="aggiungiRiga()">＋ Aggiungi riga misura</button>
+
+    <!-- TOTALE -->
+    <div class="totale-voce">
+      <div>
+        <div class="label">Totale voce</div>
+        <div class="um-label" id="totUmLabel">m²</div>
+      </div>
+      <div class="valore" id="totaleValore">0.00</div>
+    </div>
+
+    <button class="btn-primary" onclick="salvaVoce()">✓ Salva Voce</button>
+  </div>
+
+  <!-- LISTA VOCI -->
+  <div class="voci-section">
+    <div class="voci-header">
+      <h2>📋 Voci (<span id="voceCount">0</span>)</h2>
+    </div>
+    <div class="export-row">
+      <button class="export-btn" onclick="exportExcel()">📊 Excel</button>
+      <button class="export-btn pdf-btn" onclick="pdfMisure()">📄 PDF</button>
+      <button class="export-btn" onclick="backupJSON()">💾 Backup</button>
+      <button class="export-btn" onclick="document.getElementById('ripristinaInput').click()" style="color:var(--accent)">📂 Ripristina</button>
+    </div>
+    <input type="file" id="ripristinaInput" accept=".json" style="display:none" onchange="ripristinaJSON(event)">
+    <div id="vociList"><div class="empty-state">Nessuna voce ancora.<br>Compila il form sopra e premi Salva.</div></div>
+  </div>
+</div>
+
+<!-- ══ NOTE ══ -->
+<div id="sec-note" class="section">
+  <div class="form-card">
+    <div class="form-title">📝 Nuova Nota</div>
+    <div class="field"><label>Titolo</label><input type="text" id="nTitolo" placeholder="Es: Riunione DL, Problema fondazioni..."></div>
+    <div class="field"><label>Testo</label><textarea id="nTesto" placeholder="Scrivi la nota qui..."></textarea></div>
+    <button class="mic-btn" id="micBtnNote" onclick="toggleVoceNota()">🎤 <span id="micLabelNote">Dettatura vocale</span></button>
+    <button class="btn-primary" onclick="aggiungiNota()">✓ Salva Nota</button>
+  </div>
+  <div class="pdf-section-banner">
+    <span>📄 Genera PDF con tutte le note</span>
+    <button class="pdf-section-btn" onclick="pdfNote()">📄 Scarica PDF</button>
+  </div>
+  <div class="note-section">
+    <div class="section-header">Note cantiere <span class="count-badge" id="noteCount">0</span></div>
+    <div id="noteList"><div class="empty-state">Nessuna nota ancora.</div></div>
+  </div>
+</div>
+
+<!-- ══ DOCUMENTI ══ -->
+<div id="sec-doc" class="section">
+  <div class="drive-banner" onclick="apriDrive()">
+    <div class="drive-banner-icon">📂</div>
+    <div class="drive-banner-text">
+      <div class="t1">Apri Google Drive</div>
+      <div class="t2">Carica PDF e foto dal tuo Drive</div>
+    </div>
+    <div style="color:rgba(255,255,255,0.7);font-size:22px;">→</div>
+  </div>
+  <div class="form-card">
+    <div class="form-title">📁 Registra Documento</div>
+    <div class="field"><label>Nome documento</label><input type="text" id="dNome" placeholder="Es: POS Rev.2, DURC Impresa..."></div>
+    <div class="field"><label>Tipo</label>
+      <select id="dTipo"><option>POS</option><option>DURC</option><option>DURC Congruità</option><option>PSC</option><option>Contratto</option><option>DDT</option><option>Fattura</option><option>Permesso</option><option>Planimetria</option><option>Collaudo</option><option>Foto cantiere</option><option>Altro</option></select>
+    </div>
+    <div class="field">
+      <label>Link Google Drive</label>
+      <div class="link-input-wrap">
+        <input type="url" id="dLink" placeholder="https://drive.google.com/file/d/...">
+        <button class="paste-btn" onclick="incollaLink()">📋 Incolla</button>
+      </div>
+    </div>
+    <div class="field"><label>Note (opzionale)</label><input type="text" id="dNote" placeholder="Revisione, scadenza..."></div>
+    <button class="btn-primary" onclick="aggiungiDocumento()">✓ Salva Documento</button>
+  </div>
+  <div class="pdf-section-banner">
+    <span>📄 Genera PDF elenco documenti</span>
+    <button class="pdf-section-btn" onclick="pdfDocumenti()">📄 Scarica PDF</button>
+  </div>
+  <div class="doc-section">
+    <div class="section-header">Documenti <span class="count-badge" id="docCount">0</span></div>
+    <div id="docList"><div class="empty-state">Nessun documento ancora.</div></div>
+  </div>
+</div>
+
+<!-- ══ PRESENZE ══ -->
+<div id="sec-pres" class="section">
+  <div class="form-card">
+    <div class="form-title">👷 Registra Giornata</div>
+    <div class="field"><label>Data</label><input type="date" id="pData"></div>
+    <div style="background:rgba(232,160,32,0.08);border:1px solid var(--accent);border-radius:10px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--accent);margin-bottom:12px;">⚡ Operai in cantiere</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">N° Operai</span>
+          <input type="number" id="pNOperai" min="1" max="99" value="1" style="width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:26px;font-weight:800;text-align:center;padding:8px 4px;outline:none;font-family:'Barlow Condensed',sans-serif;" oninput="aggiornaTotaleForm()">
+        </div>
+        <div style="font-size:28px;color:var(--text-muted);padding-top:18px;">×</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Ore</span>
+          <input type="number" id="pOreStd" min="0.5" max="24" step="0.5" value="8" style="width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:26px;font-weight:800;text-align:center;padding:8px 4px;outline:none;font-family:'Barlow Condensed',sans-serif;" oninput="aggiornaTotaleForm()">
+        </div>
+        <div style="font-size:28px;color:var(--text-muted);padding-top:18px;">=</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <span style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Totale</span>
+          <div id="pTotaleOre" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:28px;color:var(--accent2);padding-top:8px;">8h</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);margin-bottom:8px;">➕ Operaio con ore diverse</div>
+      <div class="grid2" style="margin-bottom:6px;">
+        <div class="field" style="margin-bottom:0;"><label>Nome</label><input type="text" id="eccNome" placeholder="Es: Mario Rossi"></div>
+        <div class="field" style="margin-bottom:0;"><label>Ore</label><input type="number" id="eccOre" step="0.5" min="0.5" max="24" placeholder="4"></div>
+      </div>
+      <button onclick="aggiungiEccezione()" style="width:100%;background:var(--surface2);border:1px dashed var(--border);border-radius:8px;color:var(--text-soft);font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;padding:10px;cursor:pointer;">+ Aggiungi riga</button>
+      <div id="eccezioniList" style="margin-top:6px;"></div>
+    </div>
+    <div class="field"><label>📝 Note</label><textarea id="pNote" rows="3" placeholder="Nomi, attività svolte, meteo, consegne materiali..."></textarea></div>
+    <button class="btn-primary" onclick="salvaGiornata()">✓ Salva Giornata</button>
+  </div>
+  <div class="pdf-section-banner">
+    <span>📄 Genera PDF registro presenze</span>
+    <button class="pdf-section-btn" onclick="pdfPresenze()">📄 Scarica PDF</button>
+  </div>
+  <div class="pres-section">
+    <div class="section-header">Registro presenze <span class="count-badge" id="presCount">0 giorni</span></div>
+    <div id="presList"><div class="empty-state">Nessuna presenza registrata ancora.</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="bottom-nav">
+  <button class="nav-btn active" id="nav-misure" onclick="switchSection('misure')"><span class="nav-icon">📐</span>Misure</button>
+  <button class="nav-btn" id="nav-note" onclick="switchSection('note')"><span class="nav-icon">📝</span>Note</button>
+  <button class="nav-btn" id="nav-doc" onclick="switchSection('doc')"><span class="nav-icon">📁</span>Doc</button>
+  <button class="nav-btn" id="nav-pres" onclick="switchSection('pres')"><span class="nav-icon">👷</span>Presenze</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig={apiKey:"AIzaSyDl7RSwfrwHl96CVq019sOo51Ip_GyjZPI",authDomain:"cantieretalk.firebaseapp.com",projectId:"cantieretalk",storageBucket:"cantieretalk.firebasestorage.app",messagingSenderId:"1046411602539",appId:"1:1046411602539:web:4a8f35cea5ec86fd4adf2e"};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+const DOC_ID='paoloballo83';
+let syncTimeout=null,firestoreOk=false,_skipRemote=false;
+let voci=[],note=[],documenti=[],presenze=[];
+let cantieri={},cantiereAttivo=null;
+let recognitionNota=null;
+
+// ── STATO FORM MISURE ──
+let umCorrente='m²';
+let righeTemp=[];  // [{id, desc, l, la, h, risultato}]
+
+(function(){
+  const d=new Date();
+  const oggi=d.toISOString().slice(0,10);
+  document.getElementById('pData').value=oggi;
+  document.getElementById('fDataVoce').value=oggi;
+  document.getElementById('headerDate').textContent=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  aggiungiRiga(); // parte con una riga vuota
+})();
+
+// ── UM ──
+function setUM(um, btn){
+  umCorrente=um;
+  document.querySelectorAll('.um-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('totUmLabel').textContent=um;
+  // Aggiorna intestazione colonne in base a UM
+  const h=document.getElementById('rigaHeader');
+  if(um==='m²') h.innerHTML='<span>Descrizione riga</span><span>L (m)</span><span>La (m)</span><span></span><span>= m²</span><span></span>';
+  else if(um==='m³') h.innerHTML='<span>Descrizione riga</span><span>L (m)</span><span>La (m)</span><span>H (m)</span><span>= m³</span><span></span>';
+  else if(um==='m') h.innerHTML='<span>Descrizione riga</span><span>L (m)</span><span></span><span></span><span>= m</span><span></span>';
+  else if(um==='cad'||um==='ore') h.innerHTML='<span>Descrizione riga</span><span>Qtà</span><span></span><span></span><span>= '+um+'</span><span></span>';
+  else h.innerHTML='<span>Descrizione riga</span><span>Qtà</span><span></span><span></span><span>= '+um+'</span><span></span>';
+  ricalcolaTutte();
+}
+
+// ── RIGHE MISURE ──
+function aggiungiRiga(){
+  const id=Date.now()+Math.random();
+  righeTemp.push({id,desc:'',l:'',la:'',h:'',risultato:0});
+  renderRighe();
+  // Focus sull'ultimo campo desc
+  setTimeout(()=>{
+    const inputs=document.querySelectorAll('.riga-desc-input');
+    if(inputs.length) inputs[inputs.length-1].focus();
+  },50);
+}
+
+function renderRighe(){
+  const cont=document.getElementById('righeMisure');
+  cont.innerHTML=righeTemp.map((r,i)=>{
+    const isNeg=r.risultato<0;
+    const resText=r.risultato!==0?formatNum(r.risultato)+'':'—';
+    return `<div class="riga-misura" id="riga-${r.id}">
+      <input class="riga-desc-input" type="text" placeholder="Es: parete nord" value="${esc(r.desc)}"
+        oninput="aggRiga(${r.id},'desc',this.value)">
+      <input type="number" step="0.01" placeholder="0.00" value="${r.l}"
+        oninput="aggRiga(${r.id},'l',this.value)" style="${r.l<0?'border-color:var(--danger);color:#e88080;':''}">
+      <input type="number" step="0.01" placeholder="0.00" value="${r.la}"
+        oninput="aggRiga(${r.id},'la',this.value)" style="${r.la<0?'border-color:var(--danger);color:#e88080;':''}">
+      <input type="number" step="0.01" placeholder="0.00" value="${r.h}"
+        oninput="aggRiga(${r.id},'h',this.value)" style="${r.h<0?'border-color:var(--danger);color:#e88080;':''}">
+      <div class="riga-result ${isNeg?'neg':''}">${resText}</div>
+      <button class="riga-del" onclick="eliminaRiga(${r.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function aggRiga(id, campo, val){
+  const r=righeTemp.find(x=>x.id===id);
+  if(!r) return;
+  r[campo]=campo==='desc'?val:(val===''?'':parseFloat(val));
+  calcolaRiga(r);
+  aggiornaTotale();
+  // re-render solo il risultato senza perdere il focus
+  const el=document.getElementById('riga-'+id);
+  if(el){
+    const resEl=el.querySelector('.riga-result');
+    if(resEl){
+      const isNeg=r.risultato<0;
+      resEl.textContent=r.risultato!==0?formatNum(r.risultato):'—';
+      resEl.className='riga-result '+(isNeg?'neg':'');
+    }
+  }
+}
+
+function calcolaRiga(r){
+  const l=parseFloat(r.l)||0;
+  const la=parseFloat(r.la)||0;
+  const h=parseFloat(r.h)||0;
+  let res=0;
+  if(umCorrente==='m²') res=l*(la||h||1);
+  else if(umCorrente==='m³') res=l*la*(h||1);
+  else if(umCorrente==='m') res=l;
+  else res=l||1; // cad, kg, t, ore, mc
+  r.risultato=res;
+}
+
+function ricalcolaTutte(){
+  righeTemp.forEach(r=>calcolaRiga(r));
+  renderRighe();
+  aggiornaTotale();
+}
+
+function aggiornaTotale(){
+  const tot=righeTemp.reduce((s,r)=>s+(r.risultato||0),0);
+  document.getElementById('totaleValore').textContent=formatNum(tot);
+  document.getElementById('totUmLabel').textContent=umCorrente;
+}
+
+function eliminaRiga(id){
+  righeTemp=righeTemp.filter(r=>r.id!==id);
+  renderRighe();
+  aggiornaTotale();
+}
+
+function formatNum(n){
+  return parseFloat(n).toFixed(2);
+}
+
+// ── SALVA VOCE ──
+function salvaVoce(){
+  const desc=document.getElementById('fDesc').value.trim();
+  if(!desc){showToast('⚠️ Inserisci la descrizione!');return;}
+  const righeValide=righeTemp.filter(r=>(parseFloat(r.l)||0)!==0 || (parseFloat(r.la)||0)!==0 || (parseFloat(r.h)||0)!==0);
+  if(!righeValide.length){showToast('⚠️ Inserisci almeno una misura!');return;}
+  const tot=righeTemp.reduce((s,r)=>s+(r.risultato||0),0);
+  const dataVoce=document.getElementById('fDataVoce').value;
+  const dataLabel=dataVoce?new Date(dataVoce+'T12:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  voci.push({
+    id:Date.now(),
+    desc,
+    noteVoce:document.getElementById('fNoteVoce').value.trim(),
+    um:umCorrente,
+    righe:righeTemp.map(r=>({...r})),
+    totale:tot,
+    dataISO:dataVoce,
+    data:dataLabel
+  });
+  // Reset form
+  document.getElementById('fDesc').value='';
+  document.getElementById('fNoteVoce').value='';
+  document.getElementById('fDataVoce').value=new Date().toISOString().slice(0,10);
+  righeTemp=[];
+  aggiungiRiga();
+  aggiornaTotale();
+  salva();renderVoci();
+  showToast('✓ Voce salvata!');
+}
+
+// ── RENDER VOCI ──
+function renderVoci(){
+  document.getElementById('voceCount').textContent=voci.length;
+  const list=document.getElementById('vociList');
+  if(!voci.length){list.innerHTML='<div class="empty-state">Nessuna voce ancora.</div>';return;}
+  list.innerHTML=voci.map((v,i)=>{
+    const righeHtml=v.righe.filter(r=>r.risultato!==0).map(r=>{
+      const isNeg=r.risultato<0;
+      let formula='';
+      const l=parseFloat(r.l)||0, la=parseFloat(r.la)||0, h=parseFloat(r.h)||0;
+      if(v.um==='m²') formula=`${l} × ${la||h||1}`;
+      else if(v.um==='m³') formula=`${l} × ${la} × ${h||1}`;
+      else if(v.um==='m') formula=`${l}`;
+      else formula=`${l||1}`;
+      return `<div class="voce-riga-row">
+        <span class="voce-riga-desc">${esc(r.desc||'—')}</span>
+        <span class="voce-riga-calc ${isNeg?'neg':'pos'}">${formula} = <b>${formatNum(r.risultato)}</b> ${v.um}</span>
+      </div>`;
+    }).join('');
+    return `<div class="voce-card">
+      <div class="voce-top">
+        <span class="voce-num">#${i+1}</span>
+        <span class="voce-desc">${esc(v.desc)}</span>
+        <button class="voce-del" onclick="eliminaVoce(${v.id})">🗑</button>
+      </div>
+      ${v.noteVoce?`<div style="font-size:12px;color:var(--text-muted);font-style:italic;margin-bottom:8px;padding-left:4px;">📌 ${esc(v.noteVoce)}</div>`:''}
+      <div class="voce-righe">${righeHtml}</div>
+      <div class="voce-totale-row">
+        <span class="voce-totale-label">Totale</span>
+        <span class="voce-totale-val">${formatNum(v.totale)} ${v.um}</span>
+      </div>
+      <div class="voce-data">📅 ${v.data}</div>
+    </div>`;
+  }).join('');
+}
+
+function eliminaVoce(id){if(confirm('Eliminare questa voce?')){voci=voci.filter(v=>v.id!==id);salva();renderVoci();}}
+
+// ── FIREBASE ──
+function setSyncBadge(stato){
+  const b=document.getElementById('syncBadge');
+  if(stato==='ok'){b.className='sync-badge sync-ok';b.textContent='☁️ Sincronizzato';}
+  else if(stato==='wait'){b.className='sync-badge sync-wait';b.textContent='⏳ Salvataggio...';}
+  else{b.className='sync-badge sync-err';b.textContent='⚠️ Offline';}
+}
+db.collection('cantieri').doc(DOC_ID).onSnapshot(snap=>{
+  if(_skipRemote){_skipRemote=false;return;}
+  if(snap.exists){
+    const data=snap.data();
+    if(data.cantieri){
+      cantieri=data.cantieri;
+      if(cantiereAttivo&&cantieri[cantiereAttivo]) caricaCantiere(cantiereAttivo);
+      else{cantiereAttivo=Object.keys(cantieri)[0];caricaCantiere(cantiereAttivo);}
+      salvaLocale();renderTabs();renderAll();
+    }
+    firestoreOk=true;setSyncBadge('ok');
+  }
+},(err)=>{setSyncBadge('err');});
+
+async function salvaSuFirestore(){
+  setSyncBadge('wait');
+  try{
+    _skipRemote=true;
+    await db.collection('cantieri').doc(DOC_ID).set({cantieri,aggiornato:new Date().toISOString()});
+    setSyncBadge('ok');firestoreOk=true;
+  }catch(e){setSyncBadge('err');showToast('⚠️ Errore sync cloud');}
+}
+function salvaLocale(){try{localStorage.setItem('cantieretalk_v3',JSON.stringify(cantieri));}catch(e){}}
+function salva(){salvaCorrente();salvaLocale();clearTimeout(syncTimeout);syncTimeout=setTimeout(()=>salvaSuFirestore(),1500);}
+
+// ── CANTIERI ──
+function initCantieri(){
+  try{const r=localStorage.getItem('cantieretalk_v3');if(r)cantieri=JSON.parse(r);}catch(e){}
+  if(!Object.keys(cantieri).length){
+    try{const r2=localStorage.getItem('cantieretalk_v2');if(r2){const d=JSON.parse(r2);Object.entries(d).forEach(([id,c])=>{cantieri[id]={nome:c.nome,voci:c.voci||[],note:[],documenti:[],presenze:[]};});}}catch(e){}
+  }
+  if(!Object.keys(cantieri).length) nuovoCantiere('Cantiere 1',false);
+  else{cantiereAttivo=Object.keys(cantieri)[0];caricaCantiere(cantiereAttivo);}
+  renderTabs();renderAll();
+}
+function caricaCantiere(id){cantiereAttivo=id;voci=cantieri[id].voci||[];note=cantieri[id].note||[];documenti=cantieri[id].documenti||[];presenze=cantieri[id].presenze||[];}
+function nuovoCantiere(nome,chiedi=true){
+  if(chiedi){nome=prompt('Nome cantiere:','Cantiere '+(Object.keys(cantieri).length+1));if(!nome)return;}
+  const id='c_'+Date.now();
+  cantieri[id]={nome:nome.trim(),voci:[],note:[],documenti:[],presenze:[]};
+  if(cantiereAttivo)salvaCorrente();caricaCantiere(id);salva();renderTabs();renderAll();
+  showToast('🏗 "'+nome+'" creato!');
+}
+function switchCantiere(id){salvaCorrente();caricaCantiere(id);salva();renderTabs();renderAll();}
+function eliminaCantiere(){
+  if(Object.keys(cantieri).length<=1){showToast('⚠️ Almeno un cantiere!');return;}
+  if(!confirm('Eliminare "'+cantieri[cantiereAttivo].nome+'"?'))return;
+  delete cantieri[cantiereAttivo];caricaCantiere(Object.keys(cantieri)[0]);salva();renderTabs();renderAll();
+  showToast('🗑 Cantiere eliminato');
+}
+function salvaCorrente(){
+  if(!cantiereAttivo)return;
+  cantieri[cantiereAttivo].voci=[...voci];cantieri[cantiereAttivo].note=[...note];
+  cantieri[cantiereAttivo].documenti=[...documenti];cantieri[cantiereAttivo].presenze=[...presenze];
+}
+function renderTabs(){
+  document.getElementById('cantiereTabs').innerHTML=Object.entries(cantieri).map(([id,c])=>`<button class="cantiere-tab ${id===cantiereAttivo?'active':''}" onclick="switchCantiere('${id}')">${c.nome}</button>`).join('')+`<button class="cantiere-add" onclick="nuovoCantiere()">+</button>`;
+  document.getElementById('cantiereLabel').textContent='📍 '+(cantiereAttivo&&cantieri[cantiereAttivo]?cantieri[cantiereAttivo].nome:'');
+}
+function renderAll(){renderVoci();renderNote();renderDocumenti();renderPresenze();}
+function switchSection(nome){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+nome).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const nb=document.getElementById('nav-'+nome);if(nb)nb.classList.add('active');
+}
+
+// ── NOTE ──
+function toggleVoceNota(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){showToast('⚠️ Usa Chrome');return;}
+  const btn=document.getElementById('micBtnNote'),lbl=document.getElementById('micLabelNote');
+  if(recognitionNota){recognitionNota.stop();recognitionNota=null;btn.classList.remove('active');lbl.textContent='🎤 Dettatura vocale';return;}
+  recognitionNota=new SR();recognitionNota.lang='it-IT';recognitionNota.continuous=true;recognitionNota.interimResults=true;let tf='';
+  recognitionNota.onstart=()=>{btn.classList.add('active');lbl.textContent='⏹ In ascolto...';tf='';};
+  recognitionNota.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal){tf+=e.results[i][0].transcript+' ';document.getElementById('nTesto').value=tf.trim();}else{document.getElementById('nTesto').value=(tf+e.results[i][0].transcript).trim();}}};
+  recognitionNota.onend=()=>{recognitionNota=null;btn.classList.remove('active');lbl.textContent='🎤 Dettatura vocale';};
+  recognitionNota.onerror=()=>{recognitionNota=null;btn.classList.remove('active');lbl.textContent='🎤 Dettatura vocale';};
+  recognitionNota.start();
+}
+function aggiungiNota(){
+  const titolo=document.getElementById('nTitolo').value.trim(),testo=document.getElementById('nTesto').value.trim();
+  if(!titolo&&!testo){showToast('⚠️ Inserisci testo!');return;}
+  note.unshift({id:Date.now(),titolo:titolo||'Nota',testo,data:new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})});
+  document.getElementById('nTitolo').value='';document.getElementById('nTesto').value='';
+  salva();renderNote();showToast('📝 Nota salvata!');
+}
+function renderNote(){
+  document.getElementById('noteCount').textContent=note.length;
+  const list=document.getElementById('noteList');
+  if(!note.length){list.innerHTML='<div class="empty-state">Nessuna nota ancora.</div>';return;}
+  list.innerHTML=note.map(n=>`<div class="note-card"><div class="note-card-top"><div><div class="note-card-titolo">${esc(n.titolo)}</div><div class="note-card-data">${n.data}</div></div><button class="voce-del-small" onclick="eliminaNota(${n.id})">🗑</button></div>${n.testo?`<div class="note-card-testo">${esc(n.testo)}</div>`:''}</div>`).join('');
+}
+function eliminaNota(id){if(confirm('Eliminare?')){note=note.filter(n=>n.id!==id);salva();renderNote();}}
+
+// ── DOCUMENTI ──
+function apriDrive(){window.open('https://drive.google.com','_blank');}
+async function incollaLink(){try{const t=await navigator.clipboard.readText();document.getElementById('dLink').value=t;showToast('📋 Link incollato!');}catch(e){showToast('⚠️ Incolla manualmente');}}
+function aggiungiDocumento(){
+  const nome=document.getElementById('dNome').value.trim();if(!nome){showToast('⚠️ Inserisci nome!');return;}
+  const link=document.getElementById('dLink').value.trim();if(!link){showToast('⚠️ Incolla il link Drive!');return;}
+  documenti.unshift({id:Date.now(),nome,tipo:document.getElementById('dTipo').value,link,note:document.getElementById('dNote').value.trim(),data:new Date().toLocaleDateString('it-IT')});
+  document.getElementById('dNome').value='';document.getElementById('dLink').value='';document.getElementById('dNote').value='';
+  salva();renderDocumenti();showToast('📁 Documento salvato!');
+}
+function renderDocumenti(){
+  document.getElementById('docCount').textContent=documenti.length;
+  const list=document.getElementById('docList');
+  if(!documenti.length){list.innerHTML='<div class="empty-state">Nessun documento ancora.</div>';return;}
+  const icone={POS:'📋',DURC:'🏛️','DURC Congruità':'🏛️',PSC:'⛑️',Contratto:'📜',DDT:'🚛',Fattura:'🧾',Permesso:'✅',Planimetria:'📐',Collaudo:'🔍','Foto cantiere':'📷',Altro:'📄'};
+  list.innerHTML=documenti.map(d=>`<div class="doc-card"><div class="doc-card-top"><div class="doc-icon">${icone[d.tipo]||'📄'}</div><div class="doc-info"><div class="doc-nome">${esc(d.nome)}</div><span class="doc-tipo-badge">${esc(d.tipo)}</span>${d.note?`<div class="doc-meta">${esc(d.note)}</div>`:''}<div class="doc-meta">${d.data}</div></div><button class="voce-del-small" onclick="eliminaDoc(${d.id})">🗑</button></div><div class="doc-actions"><button class="doc-btn primary" onclick="window.open('${esc(d.link)}','_blank')">🔗 Apri su Drive</button><button class="doc-btn" onclick="copiaLink('${esc(d.link)}')">📋 Copia link</button></div></div>`).join('');
+}
+function copiaLink(link){navigator.clipboard.writeText(link).then(()=>showToast('📋 Link copiato!')).catch(()=>showToast('⚠️ Copia manualmente'));}
+function eliminaDoc(id){if(confirm('Eliminare documento?')){documenti=documenti.filter(d=>d.id!==id);salva();renderDocumenti();}}
+
+// ── PRESENZE ──
+let eccezioniTemp=[];
+function aggiornaTotaleForm(){
+  const n=parseFloat(document.getElementById('pNOperai').value)||0;
+  const o=parseFloat(document.getElementById('pOreStd').value)||0;
+  document.getElementById('pTotaleOre').textContent=(n*o)+'h';
+}
+function aggiungiEccezione(){
+  const nome=document.getElementById('eccNome').value.trim(),ore=parseFloat(document.getElementById('eccOre').value);
+  if(!nome){showToast('⚠️ Inserisci nome!');return;}if(!ore){showToast('⚠️ Inserisci ore!');return;}
+  eccezioniTemp.push({id:Date.now(),nome,ore});
+  document.getElementById('eccNome').value='';document.getElementById('eccOre').value='';
+  renderEccezioniTemp();
+}
+function renderEccezioniTemp(){
+  const list=document.getElementById('eccezioniList');
+  if(!eccezioniTemp.length){list.innerHTML='';return;}
+  list.innerHTML=eccezioniTemp.map(e=>`<div class="op-temp-row"><div class="op-temp-info"><div class="op-temp-nome">👷 ${esc(e.nome)}</div><div class="op-temp-det">${e.ore}h</div></div><button class="op-temp-del" onclick="rimuoviEccezione(${e.id})">✕</button></div>`).join('');
+}
+function rimuoviEccezione(id){eccezioniTemp=eccezioniTemp.filter(e=>e.id!==id);renderEccezioniTemp();}
+function salvaGiornata(){
+  const dataVal=document.getElementById('pData').value;
+  const nOperai=parseInt(document.getElementById('pNOperai').value)||1;
+  const oreStd=parseFloat(document.getElementById('pOreStd').value)||8;
+  const noteVal=document.getElementById('pNote').value.trim();
+  const dataLabel=dataVal?new Date(dataVal+'T12:00:00').toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}):new Date().toLocaleDateString('it-IT');
+  const esistente=presenze.find(g=>g.dataISO===dataVal);
+  if(esistente){esistente.nOperai=nOperai;esistente.oreStd=oreStd;esistente.eccezioni=[...eccezioniTemp];if(noteVal)esistente.noteLibere=(esistente.noteLibere?esistente.noteLibere+'\n':'')+noteVal;}
+  else{presenze.unshift({id:Date.now(),dataISO:dataVal,dataLabel,nOperai,oreStd,eccezioni:[...eccezioniTemp],noteLibere:noteVal});}
+  eccezioniTemp=[];document.getElementById('eccNome').value='';document.getElementById('eccOre').value='';document.getElementById('pNote').value='';
+  renderEccezioniTemp();salva();renderPresenze();showToast('✅ Giornata salvata!');switchSection('pres');
+}
+function renderPresenze(){
+  const tot=presenze.length;
+  document.getElementById('presCount').textContent=tot+' giorn'+(tot===1?'o':'i');
+  const list=document.getElementById('presList');
+  if(!presenze.length){list.innerHTML='<div class="empty-state">Nessuna presenza registrata ancora.</div>';return;}
+  list.innerHTML=presenze.map(g=>{
+    const nOp=g.nOperai||1,oreS=g.oreStd||8,totOre=nOp*oreS,ecc=g.eccezioni||[];
+    const eccRows=ecc.map(e=>`<div class="op-temp-row"><div class="op-temp-info"><div class="op-temp-nome">👷 ${esc(e.nome)}</div><div class="op-temp-det">${e.ore}h</div></div><button class="op-temp-del" onclick="eliminaEccezione(${g.id},${e.id})">🗑</button></div>`).join('');
+    return `<div class="giornata-card">
+      <div class="giornata-header">
+        <div style="cursor:pointer;flex:1;" onclick="toggleGiornata(${g.id})">
+          <div class="giornata-data">${g.dataLabel}</div>
+          <div class="giornata-meta">${nOp} operai × ${oreS}h = ${totOre}h${ecc.length?' + '+ecc.length+' eccezioni':''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="giornata-badge">${nOp} 👷</span>
+          <button class="icon-btn" onclick="toggleGiornata(${g.id})">👁</button>
+          <button class="icon-btn" onclick="modificaGiornata(${g.id})">✏️</button>
+          <button class="icon-btn" style="color:var(--danger)" onclick="eliminaGiornata(${g.id})">🗑</button>
+        </div>
+      </div>
+      <div class="giornata-body" id="gb-${g.id}" style="display:none;">
+        ${eccRows}
+        <div style="display:flex;gap:6px;margin-top:10px;align-items:flex-end;">
+          <div style="flex:1;"><input type="text" id="gnome-${g.id}" placeholder="Nome operaio" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;padding:8px 10px;outline:none;font-family:'Barlow',sans-serif;"></div>
+          <div style="width:65px;"><input type="number" id="gore2-${g.id}" placeholder="Ore" step="0.5" min="0.5" max="24" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;padding:8px 6px;outline:none;font-family:'Barlow',sans-serif;text-align:center;"></div>
+          <button onclick="aggiungiEccezioneGiornata(${g.id})" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-soft);font-size:13px;padding:8px 10px;cursor:pointer;font-weight:600;white-space:nowrap;">+ Riga</button>
+        </div>
+        <div style="margin-top:10px;">
+          <textarea id="gnote-${g.id}" rows="3" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:10px 12px;outline:none;font-family:'Barlow',sans-serif;resize:vertical;line-height:1.5;" placeholder="Note...">${esc(g.noteLibere||'')}</textarea>
+          <button onclick="salvaNoteLiberGiornata(${g.id})" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-soft);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;padding:10px;cursor:pointer;margin-top:6px;">✓ Salva Note</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleGiornata(id){const el=document.getElementById('gb-'+id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
+function eliminaGiornata(id){if(confirm('Eliminare giornata?')){presenze=presenze.filter(g=>g.id!==id);salva();renderPresenze();}}
+function aggiungiEccezioneGiornata(gid){const g=presenze.find(x=>x.id===gid);if(!g)return;const nome=document.getElementById('gnome-'+gid).value.trim(),ore=parseFloat(document.getElementById('gore2-'+gid).value);if(!nome||!ore){showToast('⚠️ Inserisci nome e ore!');return;}if(!g.eccezioni)g.eccezioni=[];g.eccezioni.push({id:Date.now(),nome,ore});salva();renderPresenze();setTimeout(()=>{const el=document.getElementById('gb-'+gid);if(el)el.style.display='block';},100);showToast('✓ Aggiunto!');}
+function eliminaEccezione(gid,eid){const g=presenze.find(x=>x.id===gid);if(!g)return;g.eccezioni=g.eccezioni.filter(e=>e.id!==eid);salva();renderPresenze();setTimeout(()=>{const el=document.getElementById('gb-'+gid);if(el)el.style.display='block';},100);}
+function salvaNoteLiberGiornata(gid){const g=presenze.find(x=>x.id===gid);if(!g)return;g.noteLibere=document.getElementById('gnote-'+gid).value.trim();salva();showToast('✓ Note salvate!');}
+function modificaGiornata(gid){const g=presenze.find(x=>x.id===gid);if(!g)return;document.getElementById('pData').value=g.dataISO;document.getElementById('pNOperai').value=g.nOperai||1;document.getElementById('pOreStd').value=g.oreStd||8;aggiornaTotaleForm();switchSection('pres');window.scrollTo({top:0,behavior:'smooth'});showToast('✏️ Modifica e salva');}
+
+// ── EXPORT ──
+function exportExcel(){
+  if(!voci.length){showToast('⚠️ Nessuna voce!');return;}
+  const nm=nomeCantiere();
+  let csv='\uFEFFN°;Descrizione;UM;Descrizione riga;L;La;H;Risultato riga;Totale voce;Data\n';
+  voci.forEach((v,i)=>{
+    v.righe.forEach((r,j)=>{
+      csv+=`${j===0?i+1:''};${j===0?'"'+v.desc+'"':''};${j===0?v.um:''};`;
+      csv+=`"${r.desc||''}";${r.l||''};${r.la||''};${r.h||''};${formatNum(r.risultato)};`;
+      csv+=`${j===0?formatNum(v.totale):''};${j===0?v.data:''}\n`;
+    });
+  });
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=nm.replace(/[^a-z0-9]/gi,'_')+'_'+new Date().toISOString().slice(0,10)+'.csv';a.click();showToast('📊 Excel scaricato!');
+}
+function backupJSON(){
+  const nm=nomeCantiere();
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({cantiere:nm,data:new Date().toLocaleDateString('it-IT'),voci,note,documenti,presenze},null,2)],{type:'application/json'}));
+  a.download='backup_'+nm.replace(/[^a-z0-9]/gi,'_')+'_'+new Date().toISOString().slice(0,10)+'.json';a.click();showToast('💾 Backup!');
+}
+function ripristinaJSON(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.voci)voci=d.voci;if(d.note)note=d.note;if(d.documenti)documenti=d.documenti;if(d.presenze)presenze=d.presenze;salva();renderAll();showToast('✅ Ripristino completato!');}catch(e){showToast('❌ File non valido!');}};
+  reader.readAsText(file);event.target.value='';
+}
+
+// ── PDF ──
+function nomeCantiere(){return (cantiereAttivo&&cantieri[cantiereAttivo])?cantieri[cantiereAttivo].nome:'Cantiere';}
+function dataOggi(){return new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function oraOggi(){return new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});}
+
+function pdfStyle(){return `<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;font-size:12px;color:#1a1917;}.page{padding:18mm 14mm;}.page-header{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:3px solid #e8a020;padding-bottom:10px;margin-bottom:16px;}.title{font-size:20px;font-weight:900;color:#e8a020;}.subtitle{font-size:13px;color:#555;margin-top:2px;font-weight:700;}.cantiere-info{font-size:10px;color:#888;margin-top:2px;}.hright{text-align:right;font-size:10px;color:#888;line-height:1.9;}.hright .data-big{font-size:14px;font-weight:800;color:#1a1917;}table{width:100%;border-collapse:collapse;margin-bottom:14px;}th{background:#1a1917;color:#e8a020;padding:6px 8px;font-size:10px;text-align:left;font-weight:700;text-transform:uppercase;}td{padding:5px 8px;border-bottom:1px solid #e8e5e0;font-size:11px;vertical-align:top;}tr:nth-child(even) td{background:#faf9f7;}.tot-row td{background:#1a1917!important;color:#f5c842;font-weight:800;font-size:12px;}.voce-title{background:#f5f0e8;border-left:4px solid #e8a020;padding:8px 10px;margin-bottom:4px;font-weight:800;font-size:13px;page-break-inside:avoid;}.voce-block{margin-bottom:16px;page-break-inside:avoid;}.voce-note-text{font-size:10px;color:#888;font-style:italic;padding:4px 10px 6px;}.neg{color:#c0392b;}.note-block{background:#faf9f7;border-left:3px solid #e8a020;padding:10px 12px;margin-bottom:10px;border-radius:0 6px 6px 0;}.pres-block{background:#faf9f7;border:1px solid #e8e5e0;border-radius:6px;padding:12px;margin-bottom:10px;page-break-inside:avoid;}.pres-data{font-size:14px;font-weight:900;color:#e8a020;margin-bottom:4px;}.footer{border-top:1px solid #ddd;padding-top:5px;display:flex;justify-content:space-between;font-size:9px;color:#aaa;margin-top:20px;}@media print{.footer{position:fixed;bottom:8mm;left:14mm;right:14mm;}}</style>`;}
+
+function apriPdfWindow(html,titolo){
+  const win=window.open('','_blank');
+  const nm=nomeCantiere();
+  win.document.write(`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>${titolo}</title>${pdfStyle()}</head><body>${html}<div class="footer"><span>📐 Contabilità Cantiere — ${nm}</span><span>Stampato il ${dataOggi()} alle ${oraOggi()}</span></div></body></html>`);
+  win.document.close();setTimeout(()=>win.print(),700);
+}
+
+function pdfMisure(){
+  if(!voci.length){showToast('⚠️ Nessuna voce!');return;}
+  const nm=nomeCantiere();
+  const blocchi=voci.map((v,i)=>{
+    const righeHtml=v.righe.filter(r=>r.risultato!==0).map(r=>{
+      const isNeg=r.risultato<0;
+      let formula='';
+      const l=parseFloat(r.l)||0,la=parseFloat(r.la)||0,h=parseFloat(r.h)||0;
+      if(v.um==='m²') formula=`${l} × ${la||h||1}`;
+      else if(v.um==='m³') formula=`${l} × ${la} × ${h||1}`;
+      else if(v.um==='m') formula=`${l}`;
+      else formula=`${l||1}`;
+      return `<tr><td style="color:#888;font-style:italic;">${esc(r.desc||'—')}</td><td>${formula}</td><td class="${isNeg?'neg':''}" style="font-weight:700;">${isNeg?'':''}${formatNum(r.risultato)} ${v.um}</td></tr>`;
+    }).join('');
+    return `<div class="voce-block">
+      <div class="voce-title">#${i+1} &nbsp; ${esc(v.desc)} &nbsp;<span style="font-size:10px;font-weight:400;color:#888;">— ${v.um} — ${v.data}</span></div>
+      ${v.noteVoce?`<div class="voce-note-text">📌 ${esc(v.noteVoce)}</div>`:''}
+      <table><thead><tr><th>Descrizione riga</th><th>Formula</th><th>Risultato</th></tr></thead><tbody>${righeHtml}</tbody>
+      <tfoot><tr class="tot-row"><td colspan="2" style="text-align:right;">TOTALE</td><td>${formatNum(v.totale)} ${v.um}</td></tr></tfoot></table>
+    </div>`;
+  }).join('');
+
+  const html=`<div class="page">
+    <div class="page-header">
+      <div><div class="title">📐 Computo Misure</div><div class="subtitle">${esc(nm)}</div><div class="cantiere-info">${voci.length} voci totali</div></div>
+      <div class="hright"><div class="data-big">${dataOggi()}</div><div>Ore ${oraOggi()}</div></div>
+    </div>
+    ${blocchi}
+  </div>`;
+  apriPdfWindow(html,`Misure — ${nm} — ${dataOggi()}`);
+  showToast('📄 PDF Misure!');
+}
+
+function pdfNote(){
+  if(!note.length){showToast('⚠️ Nessuna nota!');return;}
+  const nm=nomeCantiere();
+  const blocchi=note.map((n,i)=>`<div class="note-block"><div style="font-weight:800;font-size:13px;color:#1a1917;margin-bottom:3px;">${esc(n.titolo)}</div><div style="font-size:10px;color:#888;margin-bottom:6px;">📅 ${n.data}</div>${n.testo?`<div style="font-size:12px;color:#444;line-height:1.6;white-space:pre-wrap;">${esc(n.testo)}</div>`:''}</div>`).join('');
+  const html=`<div class="page"><div class="page-header"><div><div class="title">📝 Note Cantiere</div><div class="subtitle">${esc(nm)}</div><div class="cantiere-info">${note.length} note</div></div><div class="hright"><div class="data-big">${dataOggi()}</div><div>Ore ${oraOggi()}</div></div></div>${blocchi}</div>`;
+  apriPdfWindow(html,`Note — ${nm} — ${dataOggi()}`);showToast('📄 PDF Note!');
+}
+
+function pdfPresenze(){
+  if(!presenze.length){showToast('⚠️ Nessuna presenza!');return;}
+  const nm=nomeCantiere();
+  let totOreGlobale=0;
+  const blocchi=presenze.map(g=>{
+    const nOp=g.nOperai||1,oreS=g.oreStd||8,totOre=nOp*oreS;
+    totOreGlobale+=totOre;
+    const ecc=g.eccezioni||[];
+    return `<div class="pres-block">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div class="pres-data">${g.dataLabel}</div>
+        <div style="font-size:18px;font-weight:900;color:#1a1917;">${totOre}h</div>
+      </div>
+      <div style="font-size:12px;color:#444;margin-bottom:4px;"><b>${nOp} operai</b> × <b>${oreS}h</b> = <b style="color:#e8a020;">${totOre}h</b>${ecc.length?' + '+ecc.length+' eccezioni':''}</div>
+      ${ecc.map(e=>`<div style="font-size:11px;color:#666;padding-left:12px;">👷 ${esc(e.nome)} — <b>${e.ore}h</b></div>`).join('')}
+      ${g.noteLibere?`<div style="font-size:11px;color:#888;font-style:italic;margin-top:6px;border-top:1px solid #e8e5e0;padding-top:6px;">📝 ${esc(g.noteLibere)}</div>`:''}
+    </div>`;
+  }).join('');
+  const riepilogo=`<div style="background:#1a1917;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><span style="color:#e8a020;font-weight:800;">TOTALE COMPLESSIVO</span><span style="color:#f5c842;font-weight:900;font-size:18px;">${presenze.length} giorni — ${totOreGlobale}h</span></div>`;
+  const html=`<div class="page"><div class="page-header"><div><div class="title">👷 Registro Presenze</div><div class="subtitle">${esc(nm)}</div><div class="cantiere-info">${presenze.length} giornate</div></div><div class="hright"><div class="data-big">${dataOggi()}</div><div>Ore ${oraOggi()}</div></div></div>${blocchi}${riepilogo}</div>`;
+  apriPdfWindow(html,`Presenze — ${nm} — ${dataOggi()}`);showToast('📄 PDF Presenze!');
+}
+
+function pdfDocumenti(){
+  if(!documenti.length){showToast('⚠️ Nessun documento!');return;}
+  const nm=nomeCantiere();
+  const icone={POS:'📋',DURC:'🏛️','DURC Congruità':'🏛️',PSC:'⛑️',Contratto:'📜',DDT:'🚛',Fattura:'🧾',Permesso:'✅',Planimetria:'📐',Collaudo:'🔍','Foto cantiere':'📷',Altro:'📄'};
+  const blocchi=documenti.map(d=>`<tr><td>${icone[d.tipo]||'📄'} ${esc(d.nome)}</td><td><b style="color:#e8a020;">${esc(d.tipo)}</b></td><td style="color:#888;">${d.note?esc(d.note):''}</td><td>${d.data}</td><td style="font-size:9px;color:#888;word-break:break-all;">${esc(d.link)}</td></tr>`).join('');
+  const html=`<div class="page"><div class="page-header"><div><div class="title">📁 Elenco Documenti</div><div class="subtitle">${esc(nm)}</div><div class="cantiere-info">${documenti.length} documenti</div></div><div class="hright"><div class="data-big">${dataOggi()}</div><div>Ore ${oraOggi()}</div></div></div><table><thead><tr><th>Nome</th><th>Tipo</th><th>Note</th><th>Data</th><th>Link Drive</th></tr></thead><tbody>${blocchi}</tbody></table></div>`;
+  apriPdfWindow(html,`Documenti — ${nm} — ${dataOggi()}`);showToast('📄 PDF Documenti!');
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+initCantieri();
+</script>
+</body>
+</html>
